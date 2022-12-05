@@ -9,6 +9,10 @@
 
 
 namespace mgm {
+	//==============
+	// VECTOR CLASS
+	//==============
+	
 	template<class T> class Vec2Base;
 	template<class T> class Vec3Base;
 	template<class T> class Vec4Base;
@@ -301,9 +305,9 @@ namespace mgm {
 
 
 
-	//=======================
-	// MATRIX CLASS TEMPLATE
-	//=======================
+	//==============
+	// MATRIX CLASS
+	//==============
 
 	template<uint8_t i, uint8_t j, class T = float>
 	class mat {
@@ -368,10 +372,6 @@ namespace mgm {
 	};
 
 
-	//=============================
-	// CLASS INITIALIZER FUNCTIONS
-	//=============================
-
 	template<uint8_t i, uint8_t j, class T>
 	mat<i, j, T>::mat(const mat<i, j, T>& m) {
 		for (uint8_t x = 0; x < i; x++)
@@ -411,10 +411,6 @@ namespace mgm {
 		memcpy(mat::data, data, i * j * sizeof(T));
 	}
 
-
-	//===========
-	// OPERATORS
-	//===========
 
 	template<uint8_t i, uint8_t j, class T>
 	mat<i, j, T> mat<i, j, T>::operator+(mat<i, j, T> m) {
@@ -484,10 +480,6 @@ namespace mgm {
 	}
 
 
-	//================
-	// SELF OPERATORS
-	//================
-
 	template<uint8_t i, uint8_t j, class T>
 	void mat<i, j, T>::operator+=(mat<i, j, T> m) {
 		*this = *this + m;
@@ -524,10 +516,6 @@ namespace mgm {
 			((T*)(this->data))[x] = w;
 	}
 
-
-	//===================================
-	// SPECIFIC MATRIX CLASS DEFINITIONS
-	//===================================
 
 	using mat2 = mat<2, 2, float>;
 	using mat3 = mat<3, 3, float>;
@@ -849,4 +837,7 @@ namespace mgm {
 				return parent->getTransform() * trans;
 		}
 	};
+
+	using TransformParent32 = TransformParent<float>;
+	using TransformParent64 = TransformParent<double>;
 }
