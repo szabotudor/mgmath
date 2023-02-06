@@ -158,6 +158,17 @@ namespace mgm {
 		inline void normalize() { *this = (*this) / length(); }
 		inline vec<S, T> normalized() { return (*this) / length(); }
 		inline T directionTo(vec<S, T> v) { return (v - (*this)).normalized(); }
+		inline vec<S, T> clamped(vec<S, T> v1, vec<S, T> v2) {
+			vec<S, T> res{*this};
+			for (uint8_t i = 0; i < S; i++) {
+				if (res.data[i] < v1.data[i])
+					res.data[i] = v1.data;
+				else if (res.data[i] > v2.data[i])
+					res.data[i] = v2.data[i];
+			}
+			return res;
+		}
+		inline vec<S, T> clamp(vec<S, T> v1, vec<S, T> v2) { *this = this->clamped(v1, v2); }
 	};
 
 	template<class T>
@@ -172,7 +183,7 @@ namespace mgm {
 		Vec2Base(T vx, T vy): x{vx}, y{vy} {}
 		Vec2Base(const Vec2Base& v): x{v.x}, y{v.y} {}
 		Vec2Base(vec<2, T> v): x{v[0]}, y{v[1]} {}
-		Vec2Base<T> operator=(const Vec2Base<T>& v) { x = v.x; y = v.y; return *this; }
+		Vec2Base<T>& operator=(const Vec2Base<T>& v) { x = v.x; y = v.y; return *this; }
 
 		Vec2Base operator+(Vec2Base<T> v) { return Vec2Base(x + v.x, y + v.y); }
 		Vec2Base operator-(Vec2Base<T> v) { return Vec2Base(x - v.x, y - v.y); }
@@ -184,11 +195,27 @@ namespace mgm {
 		Vec2Base operator/=(Vec2Base<T> v) { x /= v.x; y /= v.y; return *this; }
 
 		inline T dot(Vec2Base<T> v) { return x * v.x + y * v.y; }
-		inline T length() { sqrt(this->dot(*this)); }
+		inline T length() { return sqrt(this->dot(*this)); }
 		inline T distanceTo(Vec2Base<T> v) { return (v - (*this)).length(); };
 		inline void normalize() { *this = (*this) / length(); }
 		inline Vec2Base<T> normalized() { return (*this) / length(); }
 		inline T directionTo(Vec2Base<T> v) { return (v - (*this)).normalized(); }
+		inline Vec2Base<T> clamped(Vec2Base<T> v1, Vec2Base<T> v2) {
+			Vec2Base<T> res{ *this };
+
+			if (res.x < v1.x)
+				res.x = v1.x;
+			else if (res.x > v2.x)
+				res.x = v2.x;
+
+			if (res.y < v1.y)
+				res.y = v1.y;
+			else if (res.y > v2.y)
+				res.y = v2.y;
+
+			return res;
+		}
+		inline void clamp(Vec2Base<T> v1, Vec2Base<T> v2) { *this = this->clamped(v1, v2); }
 	};
 
 	template<class T>
@@ -205,7 +232,7 @@ namespace mgm {
 		Vec3Base(T vx, Vec2Base<T> v): x{vx}, y{v.x}, z{v.y} {}
 		Vec3Base(const Vec3Base& v): x{v.x}, y{v.y}, z{v.z} {}
 		Vec3Base(vec<3, T> v): x{v[0]}, y{v[1]}, z{v[2]} {}
-		Vec3Base<T> operator=(const Vec3Base<T>& v) { x = v.x; y = v.y; z = v.z; return *this; }
+		Vec3Base<T>& operator=(const Vec3Base<T>& v) { x = v.x; y = v.y; z = v.z; return *this; }
 
 		Vec3Base operator+(Vec3Base<T> v) { return Vec3Base(x + v.x, y + v.y, z + v.z); }
 		Vec3Base operator-(Vec3Base<T> v) { return Vec3Base(x - v.x, y - v.y, z - v.z); }
@@ -217,11 +244,32 @@ namespace mgm {
 		Vec3Base operator/=(Vec3Base<T> v) { *this = (*this) / v; return *this; }
 
 		inline T dot(Vec3Base<T> v) { return x * v.x + y * v.y + z * v.z; }
-		inline T length() { sqrt(this->dot(*this)); }
+		inline T length() { return sqrt(this->dot(*this)); }
 		inline T distanceTo(Vec3Base<T> v) { return (v - (*this)).length(); }
 		inline void normalize() { *this = (*this) / length(); }
 		inline Vec3Base<T> normalized() { return (*this) / length(); }
 		inline T directionTo(Vec3Base<T> v) { return (v - (*this)).normalized(); }
+		inline Vec3Base<T> clamped(Vec3Base<T> v1, Vec3Base<T> v2) {
+			Vec3Base<T> res{ *this };
+
+			if (res.x < v1.x)
+				res.x = v1.x;
+			else if (res.x > v2.x)
+				res.x = v2.x;
+
+			if (res.y < v1.y)
+				res.y = v1.y;
+			else if (res.y > v2.y)
+				res.y = v2.y;
+
+			if (res.z < v1.z)
+				res.z = v1.z;
+			else if (res.z > v2.z)
+				res.z = v2.z;
+
+			return res;
+		}
+		inline void clamp(Vec3Base<T> v1, Vec3Base<T> v2) { *this = this->clamped(v1, v2); }
 	};
 
 	template<class T>
@@ -242,7 +290,7 @@ namespace mgm {
 		Vec4Base(T vx, Vec3Base<T> v): x{vx}, y{v.x}, z{v.y}, w{v.z} {}
 		Vec4Base(const Vec4Base& v): x{v.x}, y{v.y}, z{v.z}, w{v.w} {}
 		Vec4Base(vec<4, T> v): x{v[0]}, y{v[1]}, z{v[2]}, w{v[3]} {}
-		Vec4Base<T> operator=(const Vec4Base<T>& v) { x = v.x; y = v.y; z = v.z; w = v.w; return *this; }
+		Vec4Base<T>& operator=(const Vec4Base<T>& v) { x = v.x; y = v.y; z = v.z; w = v.w; return *this; }
 
 		Vec4Base operator+(Vec4Base<T> v) { return Vec4Base(x + v.x, y + v.y, z + v.z, w + v.w); }
 		Vec4Base operator-(Vec4Base<T> v) { return Vec4Base(x - v.x, y - v.y, z - v.z, w - v.w); }
@@ -254,11 +302,37 @@ namespace mgm {
 		Vec4Base operator/=(Vec4Base<T> v) { *this = (*this) / v; return *this; }
 
 		inline T dot(Vec4Base<T> v) { return x * v.x + y * v.y + z * v.z + w * v.w; }
-		inline T length() { sqrt(this->dot(*this)); }
+		inline T length() { return sqrt(this->dot(*this)); }
 		inline T distanceTo(Vec4Base<T> v) { return (v - (*this)).length(); }
 		inline void normalize() { *this = (*this) / length(); }
 		inline Vec4Base<T> normalized() { return (*this) / length(); }
 		inline T directionTo(Vec4Base<T> v) { return (v - (*this)).normalized(); }
+		inline Vec4Base<T> clamped(Vec4Base<T> v1, Vec4Base<T> v2) {
+			Vec4Base<T> res{*this};
+
+			if (res.x < v1.x)
+				res.x = v1.x;
+			else if (res.x > v2.x)
+				res.x = v2.x;
+
+			if (res.y < v1.y)
+				res.y = v1.y;
+			else if (res.y > v2.y)
+				res.y = v2.y;
+
+			if (res.z < v1.z)
+				res.z = v1.z;
+			else if (res.z > v2.z)
+				res.z = v2.z;
+
+			if (res.w < v1.w)
+				res.w = v1.w;
+			else if (res.w > v2.w)
+				res.w = v2.w;
+
+			return res;
+		}
+		inline void clamp(Vec4Base<T> v1, Vec4Base<T> v2) { *this = this->clamped(v1, v2); }
 	};
 
 	using vec2 = Vec2Base<float>;
@@ -606,14 +680,14 @@ namespace mgm {
 		static inline mat<4, 4, T> genRotationMatrix_Y(T rotation);
 		static inline mat<4, 4, T> genRotationMatrix_Z(T rotation);
 		static inline mat<4, 4, T> genRotationMatrix(vec<3, T> rotation, Order axisOrder = Order::XYZ);
-		static transform<T> genProjection(T fov, T width, T height, T far = (T)100.0, T near = (T)0.1) {
+		static transform<T> genProjection(T fov, T width, T height, T far_view = (T)100.0, T n = (T)0.1) {
 			transform<T> res{};
 			#if ACCURACY <= 1
 			float tfp2 = tanf(fov / 2.0f);
 			res.matrix = (mat<4, 4, T>)mat<4, 4, float>(
 				1.0f / ((width / height) * tfp2), 0.0f,        0.0f,                           0.0f,
 				0.0f,                             1.0f / tfp2, 0.0f,                           0.0f,
-				0.0f,                             0.0f,        -((far + near) / (far - near)), -(2.0f * far * near / (far - near)),
+				0.0f,                             0.0f,        -((far_view + n) / (far_view - n)), -(2.0f * far_view * n / (far_view - n)),
 				0.0f,                             0.0f,        -1.0f,                          0.0f
 				);
 			#else
