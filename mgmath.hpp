@@ -90,12 +90,7 @@ namespace mgm {
 			for (uint8_t i = 0; i < S; i++)
 				data[i] = v.data[i];
 		}
-		vec operator=(const vec<S, T>& v) {
-			for (uint8_t i = 0; i < S; i++)
-				data[i] = v.data[i];
-			return *this;
-		}
-		vec operator=(vec<S, T>& v) {
+		vec& operator=(vec<S, T>&& v) noexcept {
 			for (uint8_t i = 0; i < S; i++)
 				data[i] = v.data[i];
 			return *this;
@@ -168,7 +163,7 @@ namespace mgm {
 			}
 			return res;
 		}
-		inline vec<S, T> clamp(vec<S, T> v1, vec<S, T> v2) { *this = this->clamped(v1, v2); }
+		inline void clamp(vec<S, T> v1, vec<S, T> v2) { *this = this->clamped(v1, v2); }
 	};
 
 	template<class T>
@@ -200,7 +195,7 @@ namespace mgm {
 		inline void normalize() { *this = (*this) / length(); }
 		inline Vec2Base<T> normalized() { return (*this) / length(); }
 		inline T directionTo(Vec2Base<T> v) { return (v - (*this)).normalized(); }
-		inline Vec2Base<T> clamped(Vec2Base<T> v1, Vec2Base<T> v2) {
+		inline Vec2Base<T> clamped(Vec2Base<T> v1, Vec2Base<T> v2) const {
 			Vec2Base<T> res{ *this };
 
 			if (res.x < v1.x)
@@ -249,7 +244,7 @@ namespace mgm {
 		inline void normalize() { *this = (*this) / length(); }
 		inline Vec3Base<T> normalized() { return (*this) / length(); }
 		inline T directionTo(Vec3Base<T> v) { return (v - (*this)).normalized(); }
-		inline Vec3Base<T> clamped(Vec3Base<T> v1, Vec3Base<T> v2) {
+		inline Vec3Base<T> clamped(Vec3Base<T> v1, Vec3Base<T> v2) const {
 			Vec3Base<T> res{ *this };
 
 			if (res.x < v1.x)
@@ -307,7 +302,7 @@ namespace mgm {
 		inline void normalize() { *this = (*this) / length(); }
 		inline Vec4Base<T> normalized() { return (*this) / length(); }
 		inline T directionTo(Vec4Base<T> v) { return (v - (*this)).normalized(); }
-		inline Vec4Base<T> clamped(Vec4Base<T> v1, Vec4Base<T> v2) {
+		inline Vec4Base<T> clamped(Vec4Base<T> v1, Vec4Base<T> v2) const {
 			Vec4Base<T> res{*this};
 
 			if (res.x < v1.x)
@@ -400,7 +395,7 @@ namespace mgm {
 
 		mat(const mat<i, j, T>& m);
 		mat(mat<i, j, T>& m);
-		void operator=(const mat<i, j, T>& m);
+		mat& operator=(const mat<i, j, T>& m);
 		vec<j, T>& operator[](uint8_t x);
 
 		mat(T w = (T)0);
@@ -459,9 +454,10 @@ namespace mgm {
 	}
 
 	template<uint8_t i, uint8_t j, class T>
-	void mat<i, j, T>::operator=(const mat<i, j, T>& m) {
+	mat<i, j, T>& mat<i, j, T>::operator=(const mat<i, j, T>& m) {
 		for (uint8_t x = 0; x < i; x++)
 			data[x] = m.data[x];
+		return *this;
 	}
 
 	template<uint8_t i, uint8_t j, class T>
