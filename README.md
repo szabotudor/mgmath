@@ -2,34 +2,52 @@
 ```mgmath``` is a small vector/matrix math library with some basic transform support, and is meant to be used mainly in 3D graphics programming.
 It is a header-only library in the most pure sense, as it only consists of a single header file, which contains everything
 
-## Heads Up
-This is a work in progress, so don't shy away from contributing to it, or telling me how to improve it.
-
 ## Examples
 Some usage examples for vectors and matrices
 ### Vectors
 - To create a basic vector with a number of components:
-  - ```vec2``` with x and y
-  - ```vec3``` with x, y, and z
-  - ```vec4``` with x, y, z, and w
-- Preface the vector with:
-  - ```i``` for an intiger vector (```ivec2```)
-  - ```d``` for a double vector (```dvec2```)
-  - ```ui``` for an unsigned intiger vector (```uivec2```)
-- You can also add a number between the preface and "vec" to use anything from 8-bit intigers, to 64-bit intigers (signed and unsigned)
-  - ```i32vec3``` ```ui8vec4``` ```ui64vec2``` are a few examples
-- You can also use the ```vec``` template to create your own vector with up to 255 components
-  - ```vec<4, float>``` is the equivalent of ```vec4```
-  - ```vec<3, uint16_t>``` is the equivalent of ```ui16vec3```
-- The ```vec``` template doesn't contain the xyzw components, and to get/set an element use the ```[]``` operator
-  - ```vec<2, float> v; v[0] = 10; v[1] = 14;```
+  - `vec<2, TYPE>` with `x` `y` (short `vec2...`)
+  - `vec<3, TYPE>` with `x` `y` `z` (short `vec3...`)
+  - `vec<4, TYPE>` with `x` `y` `z` `w` (short `vec4...`)
+- After vector name `vecx` you can add `i`, `u`, `f`, `d`:
+  - `i` for an intiger vector (`vec2i32` for int32_t vector)
+  - `u` for an unsigned intiger vector (`vec2u32` for uint32_t vector)
+  - `f` for a float vector (`vec2f` for float vector)
+  - `d` for a double vector (`vec2d` for double vector)
+- You can also use anything from 8-bit intigers, to 64-bit intigers (signed and unsigned)
+  - `vec2u8` `vec2u16` `vec2u32` `vec2u64`
+- You can also use the `vec` template to create your own vector
+  - `vec<4, float>` is the equivalent of `vec4f`
+  - `vec<3, uint16_t>` is the equivalent of `vec3u16`
+- The `vec` template contains functions `x()` `y()` `z()` `w()`, equivalent to getting an element using `[0]` `[1]` `[2]` `[3]`
+  - `vec<2, float> v;` - `v[0] = 10;` is the same as `v.x() = 10;`
 
 ### Matrices
 - To create a basic matrix, it's similar to vector
 - The matrices already declared in the header are only square; To use a non-square matrix, use the template:
-  - ```mat<4, 3, float>``` creates a 4x3 matrix of floats
+  - `mat<3, 3, float>` is the equivalent of mat3f
+  - `mat<4, 3, float>` creates a 4x3 matrix of floats
 
 ### Transforms
-- So far transforms are not 100%, I am still working on them, but they can still be used as they stand
-- The function names are pretty self-explanetory
-- Quick thing to note: ```rotate``` rotates the transform globaly, and ```rotateLook``` rotates it localy, and is recommended when used as the transform for a camera in 3D.
+- Matrices have functions to rotate along any axis in any given order:
+  - `rotate2d` rotates the matrix, then returns a reference to it
+  - `rotated2d` returns a rotated version of the matrix, without modifying the original
+  - `rotate3d_xyz` rotated the matrix in the order `x`, then `y`, then `z`
+  - And so on and so forth
+- 2D matrices:
+  - 2x2 for `rotation` and `scale`
+  - 3x3 for `position`, `rotation`, `scale` and `sqew`
+- 3D matrices:
+  - 3x3 for `rotation` and `scale` in all 3 axis
+  - 4x4 for `position`, `rotation`, `scale` and `sqew`
+
+### Extra
+- Everything is tightly packed, so a list of float vectors is the same as a larger list of floats
+  - This means you can easily send them to OpenGL, Vulkan or other APIs that require you to send data in large packs
+- There is SIMD support on `x86_64` and `amd64` thanks to SSE and AVX. (so far only for `vec4f`, and `mat4f`)
+
+### To Do
+- [ ] Add remaining transform functions for matrices
+- [ ] Add SIMD support for every possible vector
+- [ ] Add SIMD support on arm
+- [ ] Add transform tree (old transform parents sucked)
