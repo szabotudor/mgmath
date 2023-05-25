@@ -1,913 +1,1012 @@
 #pragma once
-#include <cstdint>
 #include <cmath>
+#include <cstdint>
+#include <memory.h>
 
-#ifndef ACCURACY
-#define ACCURACY 1
-#endif // !ACCURACY
-
+#if defined(__x86_64) || defined(__amd64)
+#include <smmintrin.h>
+#endif
 
 
 namespace mgm {
-	//==============
-	// VECTOR CLASS
-	//==============
-	
-	template<class T> class Vec2Base;
-	template<class T> class Vec3Base;
-	template<class T> class Vec4Base;
-
-	template<uint8_t S, class T>
-	class vec {
-		void init(uint8_t& i, T x) {
-			data[i] = x;
-		}
-
-		template<class ... Ts>
-		void init(uint8_t& i, T x, Ts ... xs) {
-			data[i] = x;
-			init(++i, xs...);
-		}
-
-		public:
-		T data[S];
-
-		T& operator[](uint8_t i) {
-			if (i < S)
-				return data[i];
-			else
-				return data[S - 1];
-		}
-
-		template<class ... Ts>
-		vec(T x, Ts ... xs) {
-			static_assert(sizeof...(Ts) / sizeof(T) <= S, "To many arguments for vector");
-			data[0] = x;
-			uint8_t i = 1;
-			init(i, xs...);
-		}
-
-		template<uint8_t Sw, class Tw>
-		vec(vec<Sw, Tw> v) {
-			static_assert(Sw <= S, "Vector to big");
-			for (uint8_t i = 0; i < Sw; i++)
-				data[i] = v.data[i];
-			for (uint8_t i = Sw; i < S; i++)
-				data[i] = (T)0;
-		}
-
-		vec(Vec2Base<T> v) {
-			static_assert(S >= 2, "Vector not big enough to copy from vec2");
-			data[0] = v.x;
-			data[1] = v.y;
-		}
-
-		vec(Vec3Base<T> v) {
-			static_assert(S >= 3, "Vector not big enough to copy from vec3");
-			data[0] = v.x;
-			data[1] = v.y;
-			data[2] = v.z;
-		}
-
-		vec(Vec4Base<T> v) {
-			static_assert(S >= 4, "Vector not big enough to copy from vec4");
-			data[0] = v.x;
-			data[1] = v.y;
-			data[2] = v.z;
-			data[3] = v.w;
-		}
-
-		vec(T k = (T)0) {
-			for (uint8_t i = 0; i < S; i++)
-				data[i] = k;
-		}
-
-		vec(const vec<S, T>& v) {
-			for (uint8_t i = 0; i < S; i++)
-				data[i] = v.data[i];
-		}
-		vec(vec<S, T>& v) {
-			for (uint8_t i = 0; i < S; i++)
-				data[i] = v.data[i];
-		}
-		vec& operator=(vec<S, T>&& v) noexcept {
-			for (uint8_t i = 0; i < S; i++)
-				data[i] = v.data[i];
-			return *this;
-		}
-
-		vec<S, T> operator+(vec<S, T> v) {
-			vec<S, T> res{};
-			for (uint8_t i = 0; i < S; i++)
-				res.data[i] = data[i] + v.data[i];
-			return res;
-		}
-		vec<S, T> operator-(vec<S, T> v) {
-			vec<S, T> res{};
-			for (uint8_t i = 0; i < S; i++)
-				res.data[i] = data[i] - v.data[i];
-			return res;
-		}
-		vec<S, T> operator*(vec<S, T> v) {
-			vec<S, T> res{};
-			for (uint8_t i = 0; i < S; i++)
-				res.data[i] = data[i] * v.data[i];
-			return res;
-		}
-		vec<S, T> operator/(vec<S, T> v) {
-			vec<S, T> res{};
-			for (uint8_t i = 0; i < S; i++)
-				res.data[i] = data[i] / v.data[i];
-			return res;
-		}
-
-		vec<S, T> operator+=(vec<S, T> v) {
-			for (uint8_t i = 0; i < S; i++)
-				data[i] += v.data[i];
-			return *this;
-		}
-		vec<S, T> operator-=(vec<S, T> v) {
-			for (uint8_t i = 0; i < S; i++)
-				data[i] -= v.data[i];
-			return *this;
-		}
-		vec<S, T> operator*=(vec<S, T> v) {
-			for (uint8_t i = 0; i < S; i++)
-				data[i] *= v.data[i];
-			return *this;
-		}
-		vec<S, T> operator/=(vec<S, T> v) {
-			for (uint8_t i = 0; i < S; i++)
-				data[i] /= v.data[i];
-			return *this;
-		}
-
-		inline T dot(vec<S, T> v) {
-			T res = data[0] * v.data[0];
-			for (uint8_t i = 1; i < S; i++)
-				res += data[i] * v.data[i];
-			return res;
-		}
-		inline T length() { return sqrt(this->dot(*this)); }
-		inline T distanceTo(vec<S, T> v) { return (v - (*this)).length(); };
-		inline void normalize() { *this = (*this) / length(); }
-		inline vec<S, T> normalized() { return (*this) / length(); }
-		inline T directionTo(vec<S, T> v) { return (v - (*this)).normalized(); }
-		inline vec<S, T> clamped(vec<S, T> v1, vec<S, T> v2) {
-			vec<S, T> res{*this};
-			for (uint8_t i = 0; i < S; i++) {
-				if (res.data[i] < v1.data[i])
-					res.data[i] = v1.data;
-				else if (res.data[i] > v2.data[i])
-					res.data[i] = v2.data[i];
-			}
-			return res;
-		}
-		inline void clamp(vec<S, T> v1, vec<S, T> v2) { *this = this->clamped(v1, v2); }
-	};
-
-	template<class T>
-	class Vec2Base {
-		public:
-		T x, y;
-
-		template<class Tw>
-		Vec2Base(Vec2Base<Tw> v): x{(T)v.x}, y{(T)v.y} {}
-
-		Vec2Base(T k = (T)0): x{k}, y{k} {}
-		Vec2Base(T vx, T vy): x{vx}, y{vy} {}
-		Vec2Base(const Vec2Base& v): x{v.x}, y{v.y} {}
-		Vec2Base(vec<2, T> v): x{v[0]}, y{v[1]} {}
-		Vec2Base<T>& operator=(const Vec2Base<T>& v) { x = v.x; y = v.y; return *this; }
-
-		Vec2Base operator+(Vec2Base<T> v) { return Vec2Base(x + v.x, y + v.y); }
-		Vec2Base operator-(Vec2Base<T> v) { return Vec2Base(x - v.x, y - v.y); }
-		Vec2Base operator*(Vec2Base<T> v) { return Vec2Base(x * v.x, y * v.y); }
-		Vec2Base operator/(Vec2Base<T> v) { return Vec2Base(x / v.x, y / v.y); }
-		Vec2Base operator+=(Vec2Base<T> v) { x += v.x; y += v.y; return *this; }
-		Vec2Base operator-=(Vec2Base<T> v) { x -= v.x; y -= v.y; return *this; }
-		Vec2Base operator*=(Vec2Base<T> v) { x *= v.x; y *= v.y; return *this; }
-		Vec2Base operator/=(Vec2Base<T> v) { x /= v.x; y /= v.y; return *this; }
-
-		inline T dot(Vec2Base<T> v) { return x * v.x + y * v.y; }
-		inline T length() { return sqrt(this->dot(*this)); }
-		inline T distanceTo(Vec2Base<T> v) { return (v - (*this)).length(); };
-		inline void normalize() { *this = (*this) / length(); }
-		inline Vec2Base<T> normalized() { return (*this) / length(); }
-		inline T directionTo(Vec2Base<T> v) { return (v - (*this)).normalized(); }
-		inline Vec2Base<T> clamped(Vec2Base<T> v1, Vec2Base<T> v2) const {
-			Vec2Base<T> res{ *this };
-
-			if (res.x < v1.x)
-				res.x = v1.x;
-			else if (res.x > v2.x)
-				res.x = v2.x;
-
-			if (res.y < v1.y)
-				res.y = v1.y;
-			else if (res.y > v2.y)
-				res.y = v2.y;
-
-			return res;
-		}
-		inline void clamp(Vec2Base<T> v1, Vec2Base<T> v2) { *this = this->clamped(v1, v2); }
-	};
-
-	template<class T>
-	class Vec3Base {
-		public:
-		T x, y, z;
-
-		template<class Tw>
-		Vec3Base(Vec3Base<Tw> v): x{(T)v.x}, y{(T)v.y}, z{(T)v.z} {}
-
-		Vec3Base(T k = (T)0): x{k}, y{k}, z{k} {}
-		Vec3Base(T vx, T vy, T vz = (T)0): x{vx}, y{vy}, z{vz} {}
-		Vec3Base(Vec2Base<T> v, T vz = (T)0): x{v.x}, y{v.y}, z{vz} {}
-		Vec3Base(T vx, Vec2Base<T> v): x{vx}, y{v.x}, z{v.y} {}
-		Vec3Base(const Vec3Base& v): x{v.x}, y{v.y}, z{v.z} {}
-		Vec3Base(vec<3, T> v): x{v[0]}, y{v[1]}, z{v[2]} {}
-		Vec3Base<T>& operator=(const Vec3Base<T>& v) { x = v.x; y = v.y; z = v.z; return *this; }
-
-		Vec3Base operator+(Vec3Base<T> v) { return Vec3Base(x + v.x, y + v.y, z + v.z); }
-		Vec3Base operator-(Vec3Base<T> v) { return Vec3Base(x - v.x, y - v.y, z - v.z); }
-		Vec3Base operator*(Vec3Base<T> v) { return Vec3Base(x * v.x, y * v.y, z * v.z); }
-		Vec3Base operator/(Vec3Base<T> v) { return Vec3Base(x / v.x, y / v.y, z / v.z); }
-		Vec3Base operator+=(Vec3Base<T> v) { *this = (*this) + v; return *this; }
-		Vec3Base operator-=(Vec3Base<T> v) { *this = (*this) - v; return *this; }
-		Vec3Base operator*=(Vec3Base<T> v) { *this = (*this) * v; return *this; }
-		Vec3Base operator/=(Vec3Base<T> v) { *this = (*this) / v; return *this; }
-
-		inline T dot(Vec3Base<T> v) { return x * v.x + y * v.y + z * v.z; }
-		inline T length() { return sqrt(this->dot(*this)); }
-		inline T distanceTo(Vec3Base<T> v) { return (v - (*this)).length(); }
-		inline void normalize() { *this = (*this) / length(); }
-		inline Vec3Base<T> normalized() { return (*this) / length(); }
-		inline T directionTo(Vec3Base<T> v) { return (v - (*this)).normalized(); }
-		inline Vec3Base<T> clamped(Vec3Base<T> v1, Vec3Base<T> v2) const {
-			Vec3Base<T> res{ *this };
-
-			if (res.x < v1.x)
-				res.x = v1.x;
-			else if (res.x > v2.x)
-				res.x = v2.x;
-
-			if (res.y < v1.y)
-				res.y = v1.y;
-			else if (res.y > v2.y)
-				res.y = v2.y;
-
-			if (res.z < v1.z)
-				res.z = v1.z;
-			else if (res.z > v2.z)
-				res.z = v2.z;
-
-			return res;
-		}
-		inline void clamp(Vec3Base<T> v1, Vec3Base<T> v2) { *this = this->clamped(v1, v2); }
-	};
-
-	template<class T>
-	class Vec4Base {
-		public:
-		T x, y, z, w;
-
-		template<class Tw>
-		Vec4Base(Vec4Base<Tw> v): x{(T)v.x}, y{(T)v.y}, z{(T)v.z}, w{(T)v.w} {}
-
-		Vec4Base(T k = (T)0): x{k}, y{k}, z{k}, w{k} {}
-		Vec4Base(T vx, T vy, T vz = (T)0, T vw = (T)0): x{vx}, y{vy}, z{vz}, w{vw} {}
-		Vec4Base(Vec2Base<T> v, T vz = (T)0, T vw = (T)0): x{v.x}, y{v.y}, z{vz}, w{vw} {}
-		Vec4Base(T vx, Vec2Base<T> v, T vw = (T)0): x{vx}, y{v.x}, z{v.y}, w{vw} {}
-		Vec4Base(T vx, T vy, Vec2Base<T> v): x{vx}, y{vy}, z{v.x}, w{v.y} {}
-		Vec4Base(Vec2Base<T> v1, Vec2Base<T> v2): x{v1.x}, y{v1.y}, z{v2.x}, w{v2.y} {}
-		Vec4Base(Vec3Base<T> v, T vw = (T)0): x{v.x}, y{v.y}, z{v.z}, w{vw} {}
-		Vec4Base(T vx, Vec3Base<T> v): x{vx}, y{v.x}, z{v.y}, w{v.z} {}
-		Vec4Base(const Vec4Base& v): x{v.x}, y{v.y}, z{v.z}, w{v.w} {}
-		Vec4Base(vec<4, T> v): x{v[0]}, y{v[1]}, z{v[2]}, w{v[3]} {}
-		Vec4Base<T>& operator=(const Vec4Base<T>& v) { x = v.x; y = v.y; z = v.z; w = v.w; return *this; }
-
-		Vec4Base operator+(Vec4Base<T> v) { return Vec4Base(x + v.x, y + v.y, z + v.z, w + v.w); }
-		Vec4Base operator-(Vec4Base<T> v) { return Vec4Base(x - v.x, y - v.y, z - v.z, w - v.w); }
-		Vec4Base operator*(Vec4Base<T> v) { return Vec4Base(x * v.x, y * v.y, z * v.z, w * v.w); }
-		Vec4Base operator/(Vec4Base<T> v) { return Vec4Base(x / v.x, y / v.y, z / v.z, w / v.w); }
-		Vec4Base operator+=(Vec4Base<T> v) { *this = (*this) + v; return *this; }
-		Vec4Base operator-=(Vec4Base<T> v) { *this = (*this) - v; return *this; }
-		Vec4Base operator*=(Vec4Base<T> v) { *this = (*this) * v; return *this; }
-		Vec4Base operator/=(Vec4Base<T> v) { *this = (*this) / v; return *this; }
-
-		inline T dot(Vec4Base<T> v) { return x * v.x + y * v.y + z * v.z + w * v.w; }
-		inline T length() { return sqrt(this->dot(*this)); }
-		inline T distanceTo(Vec4Base<T> v) { return (v - (*this)).length(); }
-		inline void normalize() { *this = (*this) / length(); }
-		inline Vec4Base<T> normalized() { return (*this) / length(); }
-		inline T directionTo(Vec4Base<T> v) { return (v - (*this)).normalized(); }
-		inline Vec4Base<T> clamped(Vec4Base<T> v1, Vec4Base<T> v2) const {
-			Vec4Base<T> res{*this};
-
-			if (res.x < v1.x)
-				res.x = v1.x;
-			else if (res.x > v2.x)
-				res.x = v2.x;
-
-			if (res.y < v1.y)
-				res.y = v1.y;
-			else if (res.y > v2.y)
-				res.y = v2.y;
-
-			if (res.z < v1.z)
-				res.z = v1.z;
-			else if (res.z > v2.z)
-				res.z = v2.z;
-
-			if (res.w < v1.w)
-				res.w = v1.w;
-			else if (res.w > v2.w)
-				res.w = v2.w;
-
-			return res;
-		}
-		inline void clamp(Vec4Base<T> v1, Vec4Base<T> v2) { *this = this->clamped(v1, v2); }
-	};
-
-	using vec2 = Vec2Base<float>;
-	using vec3 = Vec3Base<float>;
-	using vec4 = Vec4Base<float>;
-	using dvec2 = Vec2Base<double>;
-	using dvec3 = Vec3Base<double>;
-	using dvec4 = Vec4Base<double>;
-
-	using i8vec2 = Vec2Base<int8_t>;
-	using i8vec3 = Vec3Base<int8_t>;
-	using i8vec4 = Vec4Base<int8_t>;
-	using ui8vec2 = Vec2Base<uint8_t>;
-	using ui8vec3 = Vec3Base<uint8_t>;
-	using ui8vec4 = Vec4Base<uint8_t>;
-
-	using i16vec2 = Vec2Base<int16_t>;
-	using i16vec3 = Vec3Base<int16_t>;
-	using i16vec4 = Vec4Base<int16_t>;
-	using ui16vec2 = Vec2Base<uint16_t>;
-	using ui16vec3 = Vec3Base<uint16_t>;
-	using ui16vec4 = Vec4Base<uint16_t>;
-
-	using i32vec2 = Vec2Base<int32_t>;
-	using i32vec3 = Vec3Base<int32_t>;
-	using i32vec4 = Vec4Base<int32_t>;
-	using ui32vec2 = Vec2Base<uint32_t>;
-	using ui32vec3 = Vec3Base<uint32_t>;
-	using ui32vec4 = Vec4Base<uint32_t>;
-
-	using i64vec2 = Vec2Base<int64_t>;
-	using i64vec3 = Vec3Base<int64_t>;
-	using i64vec4 = Vec4Base<int64_t>;
-	using ui64vec2 = Vec2Base<uint64_t>;
-	using ui64vec3 = Vec3Base<uint64_t>;
-	using ui64vec4 = Vec4Base<uint64_t>;
-
-	using ivec2 = i32vec2;
-	using ivec3 = i32vec3;
-	using ivec4 = i32vec4;
-	using uivec2 = ui32vec2;
-	using uivec3 = ui32vec3;
-	using uivec4 = ui32vec4;
-
-
-
-	//==============
-	// MATRIX CLASS
-	//==============
-
-	template<uint8_t i, uint8_t j, class T = float>
-	class mat {
-		inline void init(uint8_t& n, T x) {
-			((T*)(data))[n] = x;
-		}
-
-		template<class ... Ts>
-		inline void init(uint8_t& n, T x, Ts ... xs) {
-			((T*)(data))[n] = x;
-			init(++n, xs...);
-		}
-		
-		public:
-		vec<j, T> data[i];
-
-		mat(const mat<i, j, T>& m);
-		mat(mat<i, j, T>& m);
-		mat& operator=(const mat<i, j, T>& m);
-		vec<j, T>& operator[](uint8_t x);
-
-		mat(T w = (T)0);
-		mat(T* data);
-
-		template<class T_w>
-		mat(mat<i, j, T_w>& m) {
-			for (uint8_t x = 0; x < i; x++)
-				((T*)(data))[x] = ((T*)(m.data))[x];
-		}
-
-		template<class ... Ts>
-		mat(T x, Ts ... xs) {
-			static_assert(sizeof...(Ts) + 1 == i * j, "Number of elements in matrix initializer is not eual num matrix size");
-			uint8_t n = 0;
-			init(n, x, xs...);
-		}
-
-		inline mat<i, j, T> operator+(mat<i, j, T> m);
-		inline mat<i, j, T> operator-(mat<i, j, T> m);
-		inline mat<i, i, T> operator*(mat<j, i, T> m);
-		inline vec<j, T> operator*(vec<j, T> v);
-
-		inline mat<i, j, T> operator+(T w);
-		inline mat<i, j, T> operator-(T w);
-		inline mat<i, j, T> operator*(T w);
-		inline mat<i, j, T> operator/(T w);
-
-		inline void operator+=(mat<i, j, T> m);
-		inline void operator-=(mat<i, j, T> m);
-
-		inline void operator+=(T w);
-		inline void operator-=(T w);
-		inline void operator*=(T w);
-		inline void operator/=(T w);
-
-		/**
-		 * @brief Fill the matrix with the given value
-		 * 
-		 * @param w The value to fill the matrix with
-		 */
-		void fill(T w);
-	};
-
-
-	template<uint8_t i, uint8_t j, class T>
-	mat<i, j, T>::mat(const mat<i, j, T>& m) {
-		for (uint8_t x = 0; x < i; x++)
-			data[x] = m.data[x];
-	}
-
-	template<uint8_t i, uint8_t j, class T>
-	mat<i, j, T>::mat(mat<i, j, T>& m) {
-		for (uint8_t x = 0; x < i; x++)
-			data[x] = m.data[x];
-	}
-
-	template<uint8_t i, uint8_t j, class T>
-	mat<i, j, T>& mat<i, j, T>::operator=(const mat<i, j, T>& m) {
-		for (uint8_t x = 0; x < i; x++)
-			data[x] = m.data[x];
-		return *this;
-	}
-
-	template<uint8_t i, uint8_t j, class T>
-	vec<j, T>& mat<i, j, T>::operator[](uint8_t x) {
-		if (x < j)
-			return data[x];
-		else
-			return data[j - 1];
-	}
-
-	template<uint8_t i, uint8_t j, class T>
-	mat<i, j, T>::mat(T w) {
-		for (uint8_t x = 0; x < i; x++) {
-			data[x] = vec<j, T>((T)0);
-			data[x][x] = w;
-		}
-	}
-
-	template<uint8_t i, uint8_t j, class T>
-	mat<i, j, T>::mat(T* data) {
-		memcpy(mat::data, data, i * j * sizeof(T));
-	}
-
-
-	template<uint8_t i, uint8_t j, class T>
-	mat<i, j, T> mat<i, j, T>::operator+(mat<i, j, T> m) {
-		mat<i, j, T> res{*this};
-		for (uint8_t x = 0; x < i * j; x++)
-			((T*)(res.data))[x] += ((T*)(m.data))[x];
-		return res;
-	}
-
-	template<uint8_t i, uint8_t j, class T>
-	mat<i, j, T> mat<i, j, T>::operator-(mat<i, j, T> m) {
-		mat<i, j, T> res{*this};
-		for (uint8_t x = 0; x < i * j; x++)
-			((T*)(res.data))[x] -= ((T*)(m.data))[x];
-		return res;
-	}
-
-	template<uint8_t i, uint8_t j, class T>
-	mat<i, i, T> mat<i, j, T>::operator*(mat<j, i, T> m) {
-		mat<i, i, T> res{(T)0};
-		for (uint8_t x = 0; x < i; x++)
-			for (uint8_t y = 0; y < i; y++)
-				for (uint8_t n = 0; n < j; n++)
-					res[x][y] += data[x][n] * m.data[n][y];
-		return res;
-	}
-
-	template<uint8_t i, uint8_t j, class T>
-	vec<j, T> mat<i, j, T>::operator*(vec<j, T> v) {
-		vec<j, T> res{};
-		for (uint8_t x = 0; x < i; x++)
-			for (uint8_t y = 0; y < j; y++)
-				res[x] += data[x][y] * v[y];
-		return res;
-	}
-
-	template<uint8_t i, uint8_t j, class T>
-	mat<i, j, T> mat<i, j, T>::operator+(T w) {
-		mat<i, j, T> res{*this};
-		for (uint8_t x = 0; x < i * j; x++)
-			((T*)(this->data))[x] += w;
-		return res;
-	}
-
-	template<uint8_t i, uint8_t j, class T>
-	mat<i, j, T> mat<i, j, T>::operator-(T w) {
-		mat<i, j, T> res{*this};
-		for (uint8_t x = 0; x < i * j; x++)
-			((T*)(this->data))[x] -= w;
-		return res;
-	}
-
-	template<uint8_t i, uint8_t j, class T>
-	mat<i, j, T> mat<i, j, T>::operator*(T w) {
-		mat<i, j, T> res{*this};
-		for (uint8_t x = 0; x < i * j; x++)
-			((T*)(this->data))[x] *= w;
-		return res;
-	}
-
-	template<uint8_t i, uint8_t j, class T>
-	mat<i, j, T> mat<i, j, T>::operator/(T w) {
-		mat<i, j, T> res{*this};
-		for (uint8_t x = 0; x < i * j; x++)
-			((T*)(this->data))[x] /= w;
-		return res;
-	}
-
-
-	template<uint8_t i, uint8_t j, class T>
-	void mat<i, j, T>::operator+=(mat<i, j, T> m) {
-		*this = *this + m;
-	}
-
-	template<uint8_t i, uint8_t j, class T>
-	void mat<i, j, T>::operator-=(mat<i, j, T> m) {
-		*this = *this - m;
-	}
-
-	template<uint8_t i, uint8_t j, class T>
-	void mat<i, j, T>::operator+=(T w) {
-		*this = *this + w;
-	}
-
-	template<uint8_t i, uint8_t j, class T>
-	void mat<i, j, T>::operator-=(T w) {
-		*this = *this - w;
-	}
-
-	template<uint8_t i, uint8_t j, class T>
-	void mat<i, j, T>::operator*=(T w) {
-		*this = *this * w;
-	}
-
-	template<uint8_t i, uint8_t j, class T>
-	void mat<i, j, T>::operator/=(T w) {
-		*this = *this / w;
-	}
-
-	template<uint8_t i, uint8_t j, class T>
-	void mat<i, j, T>::fill(T w) {
-		for (uint8_t x = 0; x < i * j; x++)
-			((T*)(this->data))[x] = w;
-	}
-
-
-	using mat2 = mat<2, 2, float>;
-	using mat3 = mat<3, 3, float>;
-	using mat4 = mat<4, 4, float>;
-
-	using dmat2 = mat<2, 2, double>;
-	using dmat3 = mat<3, 3, double>;
-	using dmat4 = mat<4, 4, double>;
-
-	using i8mat2 = mat<2, 2, int8_t>;
-	using i8mat3 = mat<3, 3, int8_t>;
-	using i8mat4 = mat<4, 4, int8_t>;
-	using ui8mat2 = mat<2, 2, uint8_t>;
-	using ui8mat3 = mat<3, 3, uint8_t>;
-	using ui8mat4 = mat<4, 4, uint8_t>;
-
-	using i16mat2 = mat<2, 2, int16_t>;
-	using i16mat3 = mat<3, 3, int16_t>;
-	using i16mat4 = mat<4, 4, int16_t>;
-	using ui16mat2 = mat<2, 2, uint16_t>;
-	using ui16mat3 = mat<3, 3, uint16_t>;
-	using ui16mat4 = mat<4, 4, uint16_t>;
-
-	using i32mat2 = mat<2, 2, int32_t>;
-	using i32mat3 = mat<3, 3, int32_t>;
-	using i32mat4 = mat<4, 4, int32_t>;
-	using ui32mat2 = mat<2, 2, uint32_t>;
-	using ui32mat3 = mat<3, 3, uint32_t>;
-	using ui32mat4 = mat<4, 4, uint32_t>;
-
-	using i64mat2 = mat<2, 2, int64_t>;
-	using i64mat3 = mat<3, 3, int64_t>;
-	using i64mat4 = mat<4, 4, int64_t>;
-	using ui64mat2 = mat<2, 2, uint64_t>;
-	using ui64mat3 = mat<3, 3, uint64_t>;
-	using ui64mat4 = mat<4, 4, uint64_t>;
-
-	using imat2 = i32mat2;
-	using imat3 = i32mat3;
-	using imat4 = i32mat4;
-	using uimat2 = ui32mat2;
-	using uimat3 = ui32mat3;
-	using uimat4 = ui32mat4;
-
-
-
-	//=================
-	// TRANSFORM CLASS
-	//=================
-
-	template<class T = float>
-	class transform {
-		public:
-		enum class Order {
-			XYZ,
-			XZY,
-			YXZ,
-			YZX,
-			ZXY,
-			ZYX
-		};
-
-		mat<4, 4, float> matrix{ (T)1 };
-
-		transform() {}
-
-		transform<T> operator*(transform<T> t);
-		transform<T>& operator*=(transform<T> t);
-
-		transform(const transform& t);
-		transform& operator=(const transform& t);
-
-		void translate(vec<3, T> v);
-		transform<T> translated(vec<3, T> v);
-		void scale(vec<3, T> v);
-		transform<T> scaled(vec<3, T> v);
-		void rotate(vec<3, T> v, Order axisOrder = Order::XYZ);
-		transform<T> rotated(vec<3, T> v, Order axisOrder = Order::XYZ);
-		void rotateLook(vec<3, T> v, Order axisOrder = Order::XYZ);
-		transform<T> rotatedLook(vec<3, T> v, Order axisOrder = Order::XYZ);
-
-		vec<3, T> getTranslation() { return vec<3, T>(matrix[0][3], matrix[1][3], matrix[2][3]); }
-
-		T* data();
-
-
-		static inline mat<4, 4, T> genRotationMatrix_X(T rotation);
-		static inline mat<4, 4, T> genRotationMatrix_Y(T rotation);
-		static inline mat<4, 4, T> genRotationMatrix_Z(T rotation);
-		static inline mat<4, 4, T> genRotationMatrix(vec<3, T> rotation, Order axisOrder = Order::XYZ);
-		static transform<T> genProjection(T fov, T width, T height, T far_view = (T)100.0, T n = (T)0.1) {
-			transform<T> res{};
-			#if ACCURACY <= 1
-			float tfp2 = tanf(fov / 2.0f);
-			res.matrix = (mat<4, 4, T>)mat<4, 4, float>(
-				1.0f / ((width / height) * tfp2), 0.0f,        0.0f,                           0.0f,
-				0.0f,                             1.0f / tfp2, 0.0f,                           0.0f,
-				0.0f,                             0.0f,        -((far_view + n) / (far_view - n)), -(2.0f * far_view * n / (far_view - n)),
-				0.0f,                             0.0f,        -1.0f,                          0.0f
-				);
-			#else
-			double tfp2 = tan(fov / 2.0);
-			res.matrix = (mat<4, 4, T>)mat<4, 4, double>(
-				1.0 / ((width / height) * tfp2), 0.0, 0.0, 0.0,
-				0.0,                           1.0 / tfp2, 0.0,                            0.0,
-				0.0,                           0.0,        -((far + near) / (far - near)), -(2.0 * far * near / (far - near)),
-				0.0,                           0.0,        -1.0f,                          0.0
-				);
-			#endif
-			return res;
-		}
-	};
-
-	template<class T>
-	transform<T> transform<T>::operator*(transform<T> t) {
-		transform<T> res{ *this };
-		res.matrix = res.matrix * t.matrix;
-		return res;
-	}
-
-	template<class T>
-	transform<T>& transform<T>::operator*=(transform<T> t) {
-		*this = (*this) * (*this);
-		return *this;
-	}
-
-	template<class T>
-	transform<T>::transform(const transform& t) {
-		matrix = t.matrix;
-	}
-
-	template<class T>
-	transform<T>& transform<T>::operator=(const transform& t) {
-		matrix = t.matrix;
-		return *this;
-	}
-
-	template<class T>
-	void transform<T>::translate(vec<3, T> v) {
-		matrix[0][3] += v[0];
-		matrix[1][3] += v[1];
-		matrix[2][3] += v[2];
-	}
-
-	template<class T>
-	transform<T> transform<T>::translated(vec<3, T> v) {
-		transform res{ *this };
-		res.matrix[0][3] += v[0];
-		res.matrix[1][3] += v[1];
-		res.matrix[2][3] += v[2];
-		return res;
-	}
-
-	template<class T>
-	void transform<T>::scale(vec<3, T> v) {
-		matrix[0][0] *= v[0];
-		matrix[1][1] *= v[1];
-		matrix[2][2] *= v[2];
-	}
-
-	template<class T>
-	transform<T> transform<T>::scaled(vec<3, T> v) {
-		transform res{ *this };
-		res.matrix[0][0] *= v[0];
-		res.matrix[1][1] *= v[1];
-		res.matrix[2][2] *= v[2];
-		return res;
-	}
-
-	template<class T>
-	void transform<T>::rotate(vec<3, T> v, Order axisOrder) {
-		matrix = matrix * genRotationMatrix(v, axisOrder);
-	}
-
-	template<class T>
-	transform<T> transform<T>::rotated(vec<3, T> v, Order axisOrder) {
-		transform res{*this};
-		res.matrix = matrix * genRotationMatrix(v, axisOrder);
-		return res;
-	}
-
-	template<class T>
-	void transform<T>::rotateLook(vec<3, T> v, Order axisOrder) {
-		matrix = genRotationMatrix(v, axisOrder) * matrix;
-	}
-
-	template<class T>
-	transform<T> transform<T>::rotatedLook(vec<3, T> v, Order axisOrder) {
-		transform res{ *this };
-		res.matrix = genRotationMatrix(v, axisOrder) * matrix;
-		return res;
-	}
-
-	template<class T>
-	T* transform<T>::data() {
-		return (T*)&matrix;
-	}
-
-	template<class T>
-	mat<4, 4, T> transform<T>::genRotationMatrix_X(T rotation) {
-		#if ACCURACY <= 1
-		float s = sinf((float)rotation);
-		float c = cosf((float)rotation);
-		return (mat<4, 4, T>)mat<4, 4, float>(
-			1.0f, 0.0f, 0.0f, 0.0f,
-			0.0f, c,    s,    0.0f,
-			0.0f, -s,   c,    0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
-			);
-		#else
-		double s = sin((double)rotation);
-		double c = cos((double)rotation);
-		return (mat<4, 4, T>)mat<4, 4, double>(
-			1.0, 0.0, 0.0, 0.0,
-			0.0, c,   s,   0.0,
-			0.0, -s,  c,   0.0,
-			0.0, 0.0, 0.0, 1.0
-			);
-		#endif
-	}
-
-	template<class T>
-	mat<4, 4, T> transform<T>::genRotationMatrix_Y(T rotation) {
-		#if ACCURACY <= 1
-		float s = sinf((float)rotation);
-		float c = cosf((float)rotation);
-		return (mat<4, 4, T>)mat<4, 4, float>(
-			c,    0.0f, -s,   0.0f,
-			0.0f, 1.0f, 0.0f, 0.0f,
-			s,    0.0f, c,    0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
-			);
-		#else
-		double s = sin((double)rotation);
-		double c = cos((double)rotation);
-		return (mat<4, 4, T>)mat<4, 4, double>(
-			c,   0.0, -s,  0.0,
-			0.0, 1.0, 0.0, 0.0,
-			s,   0.0, c,   0.0,
-			0.0, 0.0, 0.0, 1.0
-			);
-		#endif
-	}
-
-	template<class T>
-	mat<4, 4, T> transform<T>::genRotationMatrix_Z(T rotation) {
-		#if ACCURACY <= 1
-		float s = sinf((float)rotation);
-		float c = cosf((float)rotation);
-		return (mat<4, 4, T>)mat<4, 4, float>(
-			c,    -s,   0.0f, 0.0f,
-			s,    c,    0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
-			);
-		#else
-		double s = sin((double)rotation);
-		double c = cos((double)rotation);
-		return (mat<4, 4, T>)mat<4, 4, double>(
-			c,   -s,  0.0, 0.0,
-			s,   c,   0.0, 0.0,
-			0.0, 0.0, 1.0, 0.0,
-			0.0, 0.0, 0.0, 1.0
-			);
-		#endif
-	}
-
-	template<class T>
-	mat<4, 4, T> transform<T>::genRotationMatrix(vec<3, T> rotation, Order axisOrder) {
-		switch (axisOrder) {
-			case Order::XYZ:
-				return genRotationMatrix_X(rotation[0])
-					* genRotationMatrix_Y(rotation[1])
-					* genRotationMatrix_Z(rotation[2]);
-				break;
-			case Order::XZY:
-				return genRotationMatrix_X(rotation[0])
-					* genRotationMatrix_Z(rotation[2])
-					* genRotationMatrix_Y(rotation[1]);
-				break;
-			case Order::YXZ:
-				return genRotationMatrix_Y(rotation[1])
-					* genRotationMatrix_X(rotation[0])
-					* genRotationMatrix_Z(rotation[2]);
-				break;
-			case Order::YZX:
-				return genRotationMatrix_Y(rotation[1])
-					* genRotationMatrix_Z(rotation[2])
-					* genRotationMatrix_X(rotation[0]);
-				break;
-			case Order::ZXY:
-				return genRotationMatrix_Z(rotation[2])
-					* genRotationMatrix_X(rotation[0])
-					* genRotationMatrix_Y(rotation[1]);
-				break;
-			case Order::ZYX:
-				return genRotationMatrix_Z(rotation[2])
-					* genRotationMatrix_Y(rotation[1])
-					* genRotationMatrix_X(rotation[0]);
-				break;
-			default:
-				return mat<4, 4, T>();
-				break;
-		}
-	}
-
-	using transform32 = transform<float>;
-	using transform64 = transform<double>;
-
-	template<class T>
-	struct TransformParent {
-		transform<T> trans{};
-		TransformParent<T>* parent = nullptr;
-
-		transform<T> getTransform() {
-			if (parent == nullptr)
-				return trans;
-			else
-				return parent->getTransform() * trans;
-		}
-	};
-
-	using TransformParent32 = TransformParent<float>;
-	using TransformParent64 = TransformParent<double>;
+
+    //=========
+    // VECTORS
+    //=========
+
+    template<bool E, class I>
+    struct enbif {};
+    template<class I>
+    struct enbif<true, I> { typedef I type; };
+
+    template<typename T, typename U>
+    struct is_same_type {
+        static constexpr bool value = false;
+    };
+
+    template<typename T>
+    struct is_same_type<T, T> {
+        static constexpr bool value = true;
+    };
+
+    template<size_t S, class T>
+    class vec {
+        template<class ... Ts>
+        void init(size_t& i, const T x, const Ts ... xs) {
+            data[i] = x;
+            init(++i, xs...);
+        }
+        void init(size_t& i, const T x1, const T x2) {
+            data[i] = x1;
+            data[i + 1] = x2;
+        }
+
+        public:
+        T data[S]{};
+
+        template<size_t VectorSize = S, typename enbif<VectorSize >= 1, int>::type = 0>
+        T& x() { return data[0]; }
+        template<size_t VectorSize = S, typename enbif<VectorSize >= 2, int>::type = 0>
+        T& y() { return data[1]; }
+        template<size_t VectorSize = S, typename enbif<VectorSize >= 3, int>::type = 0>
+        T& z() { return data[2]; }
+        template<size_t VectorSize = S, typename enbif<VectorSize >= 4, int>::type = 0>
+        T& w() { return data[3]; }
+
+        template<size_t VectorSize = S, typename enbif<VectorSize >= 1, int>::type = 0>
+        const T& x() const { return data[0]; }
+        template<size_t VectorSize = S, typename enbif<VectorSize >= 2, int>::type = 0>
+        const T& y() const { return data[1]; }
+        template<size_t VectorSize = S, typename enbif<VectorSize >= 3, int>::type = 0>
+        const T& z() const { return data[2]; }
+        template<size_t VectorSize = S, typename enbif<VectorSize >= 4, int>::type = 0>
+        const T& w() const { return data[3]; }
+
+        vec(const vec<S, T>&) = default;
+        vec(vec<S, T>&&) = default;
+        vec& operator=(const vec<S, T>&) = default;
+        vec& operator=(vec<S, T>&&) = default;
+
+        template<size_t VectorSize =S, class ... Ts, typename enbif<VectorSize >= 5, int>::type = 0>
+        explicit vec(const T x, const Ts ... xs) {
+            static_assert(sizeof...(Ts) + 1 == S);
+            size_t i = 0;
+            init(i, x, xs...);
+        }
+
+        template<size_t VectorSize =S, typename enbif<VectorSize == 2, int>::type = 0>
+        explicit vec(const T x, const T y) {
+            this->x() = x;
+            this->y() = y;
+        }
+        template<size_t VectorSize =S, typename enbif<VectorSize == 3, int>::type = 0>
+        explicit vec(const T x, const T y, const T z) {
+            this->x() = x;
+            this->y() = y;
+            this->z() = z;
+        }
+        template<size_t VectorSize =S, typename enbif<VectorSize == 4, int>::type = 0>
+        explicit vec(const T x, const T y, const T z, const T w) {
+            this->x() = x;
+            this->y() = y;
+            this->z() = z;
+            this->w() = w;
+        }
+
+        vec(const T x = T()) {
+            for (T& p : data)
+                p = x;
+        }
+
+        explicit vec(const T* k) {
+            memcpy(data, k, S * sizeof(T));
+        }
+
+        T& operator[](const size_t i) {
+            if (i < S)
+                return data[i];
+            return data[S - 1];
+        }
+
+        const T& operator[](const size_t i) const {
+            if (i < S)
+                return data[i];
+            return data[S - 1];
+        }
+
+        vec<S, T> operator+(const vec<S, T>& v) const {
+            vec<S, T> res{};
+            for (size_t i = 0; i < S; i++)
+                res[i] = data[i] + v[i];
+            return res;
+        }
+        vec<S, T> operator-(const vec<S, T>& v) const {
+            vec<S, T> res{};
+            for (size_t i = 0; i < S; i++)
+                res[i] = data[i] - v[i];
+            return res;
+        }
+        vec<S, T> operator*(const vec<S, T>& v) const {
+            vec<S, T> res{};
+            for (size_t i = 0; i < S; i++)
+                res[i] = data[i] * v[i];
+            return res;
+        }
+        vec<S, T> operator/(const vec<S, T>& v) const {
+            vec<S, T> res{};
+            for (size_t i = 0; i < S; i++)
+                res[i] = data[i] / v[i];
+            return res;
+        }
+
+        vec<S, T>& operator+=(const vec<S, T>& v) {
+            for (size_t i = 0; i < S; i++)
+                data[i] += v.data[i];
+            return *this;
+        }
+        vec<S, T>& operator-=(const vec<S, T>& v) {
+            for (size_t i = 0; i < S; i++)
+                data[i] -= v.data[i];
+            return *this;
+        }
+        vec<S, T>& operator*=(const vec<S, T>& v) {
+            for (size_t i = 0; i < S; i++)
+                data[i] *= v.data[i];
+            return *this;
+        }
+        vec<S, T>& operator/=(const vec<S, T>& v) {
+            for (size_t i = 0; i < S; i++)
+                data[i] /= v.data[i];
+            return *this;
+        }
+
+        T* begin() { return data; }
+        T* end() { return data + S; }
+
+        const T* begin() const { return data; }
+        const T* end() const{ return data + S; }
+
+        /**
+         * @brief Calculate the dot product between this vector and another
+         * 
+         * @param v The second vector in the dot product operation
+         */
+        T dot(const vec<S, T>& v) const {
+            T res = data[0] * v.data[0];
+            for (size_t i = 1; i < S; i++)
+                res += data[i] * v.data[i];
+            return res;
+        }
+
+        /**
+         * @brief Calculate the length of the vector
+         */
+        T length() const {
+            return std::sqrt(this->dot(*this));
+        }
+
+        /**
+         * @brief Calculate the distance between this vector and another
+         * 
+         * @param v The vector to calculate the distance to
+         */
+        T distance_to(const vec<S, T>& v) const {
+            return (v - *this).length();
+        }
+
+        /**
+         * @brief Return a normalized version of this vector
+         * 
+         * @return The normalized vector
+         */
+        vec<S, T> normalized() const {
+            return *this / this->length();
+        }
+
+        /**
+         * @brief Normalize this vector, then return a reference to it
+         * 
+         * @return A reference to this vector, after normalizing it
+         */
+        vec<S, T>& normalize() {
+            return *this /= this->length();
+        }
+
+        /**
+         * @brief Return the direction from this vector to another
+         * 
+         * @param v The vector to trace to
+         */
+        vec<S, T> direction_to(const vec<S, T>& v) const {
+            return (v - *this).normalized();
+        }
+
+        private:
+        static T max(const T& k1, const T& k2) {
+            if (k1 > k2)
+                return k1;
+            return k2;
+        }
+        static T min(const T& k1, const T& k2) {
+            if (k1 < k2)
+                return k1;
+            return k2;
+        }
+
+        public:
+        /**
+         * @brief Return the a vector with all values minimum between the two
+         * 
+         * @param v1 The first vector
+         * @param v2 The second vector
+         */
+        static vec<S, T> max(const vec<S, T>& v1, const vec<S, T>& v2) {
+            vec<S, T> res{};
+            for (size_t i = 0; i < S; i++)
+                res[i] = max(v1.data[i], v2.data[i]);
+            return res;
+        }
+
+        /**
+         * @brief Return the a vector with all values maximum between the two
+         * 
+         * @param v1 The first vector
+         * @param v2 The second vector
+         */
+        static vec<S, T> min(const vec<S, T>& v1, const vec<S, T>& v2) {
+            vec<S, T> res{};
+            for (size_t i = 0; i < S; i++)
+                res[i] = min(v1.data[i], v2.data[i]);
+            return res;
+        }
+
+        /**
+         * @brief Return a clamped version of this vector
+         * 
+         * @param low The lowest to clamp to
+         * @param high The highest to clamp to
+         * @return A vector with all values clamped between the two other vectors
+         */
+        vec<S, T> clamped(const vec<S, T>& low, const vec<S, T>& high) const {
+            return max(min(*this, high), low);
+        }
+
+        /**
+         * @brief Clamp this vector between two vectors, and return a reference to it
+         * 
+         * @param low The lowest to clamp to
+         * @param high The highest to clamp to
+         * @return A reference to this vector, after clamping
+         */
+        vec<S, T>& clamp(const vec<S, T>& low, const vec<S, T>& high) {
+            *this = max(min(*this, high), low);
+            return *this;
+        }
+    };
+
+#if defined(__x86_64) || defined(__amd64)
+    template<>
+    inline vec<4, float>::vec(const float k) {
+        *(__m128*)data = _mm_set1_ps(k);
+    }
+
+    template<>
+    inline vec<4, float> vec<4, float>::operator+(const vec<4, float> &v) const {
+        const __m128 m = _mm_add_ps(*(__m128*)data, *(__m128*)v.data);
+        return vec<4, float> { (float*)&m };
+    }
+    template<>
+    inline vec<4, float> vec<4, float>::operator-(const vec<4, float> &v) const {
+        const __m128 m = _mm_sub_ps(*(__m128*)data, *(__m128*)v.data);
+        return vec<4, float> { (float*)&m };
+    }
+    template<>
+    inline vec<4, float> vec<4, float>::operator*(const vec<4, float> &v) const {
+        const __m128 m = _mm_mul_ps(*(__m128*)data, *(__m128*)v.data);
+        return vec<4, float> { (float*)&m };
+    }
+    template<>
+    inline vec<4, float> vec<4, float>::operator/(const vec<4, float> &v) const {
+        const __m128 m = _mm_div_ps(*(__m128*)data, *(__m128*)v.data);
+        return vec<4, float> { (float*)&m };
+    }
+
+    template<>
+    inline vec<4, float>& vec<4, float>::operator+=(const vec<4UL, float> &v) {
+        *(__m128*)data = _mm_add_ps(*(__m128*)data, *(__m128*)v.data);
+        return *this;
+    }
+    template<>
+    inline vec<4, float>& vec<4, float>::operator-=(const vec<4UL, float> &v) {
+        *(__m128*)data = _mm_sub_ps(*(__m128*)data, *(__m128*)v.data);
+        return *this;
+    }
+    template<>
+    inline vec<4, float>& vec<4, float>::operator*=(const vec<4UL, float> &v) {
+        *(__m128*)data = _mm_mul_ps(*(__m128*)data, *(__m128*)v.data);
+        return *this;
+    }
+    template<>
+    inline vec<4, float>& vec<4, float>::operator/=(const vec<4UL, float> &v) {
+        *(__m128*)data = _mm_div_ps(*(__m128*)data, *(__m128*)v.data);
+        return *this;
+    }
+
+    template<>
+    inline vec<4, float> vec<4, float>::max(const vec<4UL, float> &v1, const vec<4UL, float> &v2) {
+        const __m128& m = _mm_max_ps(*(__m128*)v1.data, *(__m128*)v2.data);
+        return vec<4, float> { (float*)&m };
+    }
+    template<>
+    inline vec<4, float> vec<4, float>::min(const vec<4UL, float> &v1, const vec<4UL, float> &v2) {
+        const __m128& m = _mm_min_ps(*(__m128*)v1.data, *(__m128*)v2.data);
+        return vec<4, float> { (float*)&m };
+    }
+#endif
+
+
+    using vec2f = vec<2, float>;
+    using vec3f = vec<3, float>;
+    using vec4f = vec<4, float>;
+    using vec2d = vec<2, double>;
+    using vec3d = vec<3, double>;
+    using vec4d = vec<4, double>;
+
+    using vec2u8 = vec<2, uint8_t>;
+    using vec3u8 = vec<3, uint8_t>;
+    using vec4u8 = vec<4, uint8_t>;
+    using vec2i8 = vec<2, int8_t>;
+    using vec3i8 = vec<3, int8_t>;
+    using vec4i8 = vec<4, int8_t>;
+
+    using vec2u16 = vec<2, uint16_t>;
+    using vec3u16 = vec<3, uint16_t>;
+    using vec4u16 = vec<4, uint16_t>;
+    using vec2i16 = vec<2, int16_t>;
+    using vec3i16 = vec<3, int16_t>;
+    using vec4i16 = vec<4, int16_t>;
+
+    using vec2u32 = vec<2, uint32_t>;
+    using vec3u32 = vec<3, uint32_t>;
+    using vec4u32 = vec<4, uint32_t>;
+    using vec2i32 = vec<2, int32_t>;
+    using vec3i32 = vec<3, int32_t>;
+    using vec4i32 = vec<4, int32_t>;
+
+    using vec2u64 = vec<2, uint64_t>;
+    using vec3u64 = vec<3, uint64_t>;
+    using vec4u64 = vec<4, uint64_t>;
+    using vec2i64 = vec<2, int64_t>;
+    using vec3i64 = vec<3, int64_t>;
+    using vec4i64 = vec<4, int64_t>;
+
+
+
+    //==========
+    // MATRICES
+    //==========
+
+    template<size_t l, size_t c, class T>
+    class mat {
+        template<class ... Ts>
+        void init(size_t& i, const T x, const Ts ... xs) {
+            ((T*)data)[i] = x;
+            init(++i, xs...);
+        }
+        void init(size_t& i, const T x) {
+            ((T*)data)[i] = x;
+        }
+
+        public:
+
+        vec<c, T> data[l];
+
+        mat(const mat<l, c, T>&) = default;
+        mat(mat<l, c, T>&&) = default;
+        mat& operator=(const mat<l, c, T>&) = default;
+        mat& operator=(mat<l, c, T>&&) = default;
+
+        template<class ... Ts>
+        explicit mat(const T x, const Ts ... xs) {
+            size_t i = 0;
+            init(i, x, xs...);
+        }
+
+        explicit mat(const T x = T()) {
+            for (size_t i = 0; i < l && i < c; i++)
+                data[i][i] = x;
+        }
+
+        explicit mat(const T* k) {
+            memcpy(data, k, l * c * sizeof(T));
+        }
+
+        vec<c, T>& operator[](const size_t i) {
+            if (i < l)
+                return data[i];
+            return data[l - 1];
+        }
+        const vec<c, T>& operator[](const size_t i) const {
+            if (i < l)
+                return data[i];
+            return data[l - 1];
+        }
+
+        mat<l, c, T> operator+(const mat<l, c, T>& m) const {
+            mat<l, c, T> res{};
+            for (size_t i = 0; i < l; i++)
+                res[i] = data[i] + m[i];
+            return res;
+        }
+        mat<l, c, T> operator-(const mat<l, c, T>& m) const {
+            mat<l, c, T> res{};
+            for (size_t i = 0; i < l; i++)
+                res[i] = data[i] - m[i];
+            return res;
+        }
+
+        template<size_t l2, size_t c2, typename enbif<c == l2, int>::type = 0>
+        mat<l, c2, T> operator*(const mat<l2, c2, T>& m) const {
+            mat<l, c2, T> res{};
+            for (int i = 0; i < l; i++)
+                for (int j = 0; j < c2; j++)
+                    for (int k = 0; k < c; k++)
+                        res[i][j] += data[i][k] * m[k][j];
+            return res;
+        }
+
+        mat<l, c, T>& operator+=(const mat<l, c, T>& m) {
+            for (size_t i = 0; i < l; i++)
+                data[i] += m[i];
+            return *this;
+        }
+        mat<l, c, T>& operator-=(const mat<l, c, T>& m) {
+            for (size_t i = 0; i < l; i++)
+                data[i] -= m[i];
+            return *this;
+        }
+
+        vec<c, T>* begin() { return data; }
+        vec<c, T>* end() { return data + l; }
+
+        const vec<c, T>* begin() const { return data; }
+        const vec<c, T>* end() const{ return data + l; }
+
+        /**
+         * @brief Return a transposed version of the matrix
+         */
+        mat<c, l, T> transposed() const {
+            mat<c, l, T> res{};
+            for (size_t i = 0; i < c; i++)
+                for (size_t j = 0; j < l; j++)
+                    res[i][j] = data[j][i];
+            return res;
+        }
+
+        /**
+         * @brief Remove the column(x) and line(y) from the matrix, and return the new matrix
+         * 
+         * @param pos 
+         * @return mat<l - 1, c - 1, T> 
+         */
+        mat<l - 1, c - 1, T> submat(const vec2u64& pos) const {
+            mat<l - 1, c - 1, T> res{};
+            for (size_t i = 0; i < l - 1; i++) {
+                for (size_t j = 0; j < c - 1; j++) {
+                    res[i][j] = data[i + (i >= pos.y())][j + (j >= pos.x())];
+                }
+            }
+            return res;
+        }
+
+        /**
+         * @brief Calculate the determinant of the matrix
+         */
+        template<size_t Lines = l, size_t Columns = c, typename enbif<Lines >= 3 && Columns == Lines, int>::type = 0>
+        T det() const {
+            T res{};
+            bool ff = false;
+            for (size_t i = 0; i < c; i++) {
+                if (ff)
+                    res -= data[i][0] * submat(vec2u64(i, 0)).det();
+                else
+                    res += data[i][0] * submat(vec2u64(i, 0)).det();
+                ff = ! ff;
+            }
+            return res;
+        }
+
+        /**
+         * @brief Calculate the determinant of the matrix
+         */
+        template<size_t Lines = l, size_t Columns = c, typename enbif<Lines == 2 && Columns == 2, int>::type = 0>
+        T det() const {
+            return data[0][0] * data[1][1] - data[0][1] * data[1][0];
+        }
+
+        /**
+         * @brief Generate a 2D rotation matrix with angle and scale (scale is 1.0)
+         * 
+         * @param angle The angle to use
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<Lines == 2 && Columns == 2
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        static mat<l, c, T> gen_rotation2d(T angle) {
+            const T cos = std::cos(angle);
+            const T sin = std::sin(angle);
+            return mat<c, l, T>{
+                cos, -sin,
+                sin, cos
+            };
+        }
+
+        /**
+         * @brief Generate a 2D rotation matrix with angle, position, scale and skew (position and skew are 0.0, scale is 1.0)
+         * 
+         * @param angle The angle to use
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<Lines == 3 && Columns == 3
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        static mat<l, c, T> gen_rotation2d(T angle) {
+            const T cos = std::cos(angle);
+            const T sin = std::sin(angle);
+            return mat<c, l, T>{
+                cos, -sin, T(),
+                sin, cos, T(),
+                T(), T(), (T)1
+            };
+        }
+
+        /**
+         * @brief Generate a 3D rotation matrix for the X axis with angle and scale (scale is 1.0)
+         * 
+         * @param angle The angle to use
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<Lines == 3 && Columns == 3
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        static mat<l, c, T> gen_x_rotation3d(T angle) {
+            const T cos = std::cos(angle);
+            const T sin = std::sin(angle);
+            return mat<c, l, T>{
+                (T)1, T(), T(),
+                T(), cos, -sin,
+                T(), sin, cos
+            };
+        }
+
+        /**
+         * @brief Generate a 3D rotation matrix for the Y axis with angle and scale (scale is 1.0)
+         * 
+         * @param angle The angle to use
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<Lines == 3 && Columns == 3
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        static mat<l, c, T> gen_y_rotation3d(T angle) {
+            const T cos = std::cos(angle);
+            const T sin = std::sin(angle);
+            return mat<c, l, T>{
+                cos, T(), sin,
+                T(), (T)1, T(),
+                -sin, T(), cos
+            };
+        }
+
+        /**
+         * @brief Generate a 3D rotation matrix for the Z axis with angle and scale (scale is 1.0)
+         * 
+         * @param angle The angle to use
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<Lines == 3 && Columns == 3
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        static mat<l, c, T> gen_z_rotation3d(T angle) {
+            const T cos = std::cos(angle);
+            const T sin = std::sin(angle);
+            return mat<c, l, T>{
+                cos, -sin, T(),
+                sin, cos, T(),
+                T(), T(), (T)1
+            };
+        }
+
+        /**
+         * @brief Generate a 3D rotation matrix using a precalculated sin and cos for the X axis with angle and scale (scale is 1.0)
+         * 
+         * @param sin Sine of the angle
+         * @param cos Cosine of the engle
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<Lines == 3 && Columns == 3
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        static mat<l, c, T> gen_x_rotation3d(T sin, T cos) {
+            return mat<c, l, T>{
+                (T)1, T(), T(),
+                T(), cos, -sin,
+                T(), sin, cos
+            };
+        }
+
+        /**
+         * @brief Generate a 3D rotation matrix using a precalculated sin and cos for the Y axis with angle and scale (scale is 1.0)
+         * 
+         * @param sin Sine of the angle
+         * @param cos Cosine of the engle
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<Lines == 3 && Columns == 3
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        static mat<l, c, T> gen_y_rotation3d(T sin, T cos) {
+            return mat<c, l, T>{
+                cos, T(), sin,
+                T(), (T)1, T(),
+                -sin, T(), cos
+            };
+        }
+
+        /**
+         * @brief Generate a 3D rotation matrix using a precalculated sin and cos for the Z axis with angle and scale (scale is 1.0)
+         * 
+         * @param sin Sine of the angle
+         * @param cos Cosine of the engle
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<Lines == 3 && Columns == 3
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        static mat<l, c, T> gen_z_rotation3d(T sin, T cos) {
+            return mat<c, l, T>{
+                cos, -sin, T(),
+                sin, cos, T(),
+                T(), T(), (T)1
+            };
+        }
+
+        /**
+         * @brief Generate a 3D rotation matrix for the X axis with angle, position, scale and skew (position and skew are 0.0, scale is 1.0)
+         * 
+         * @param angle The angle to use
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<Lines == 4 && Columns == 4
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        static mat<l, c, T> gen_x_rotation3d(T angle) {
+            const T cos = std::cos(angle);
+            const T sin = std::sin(angle);
+            return mat<c, l, T>{
+                (T)1, T(), T(), T(),
+                T(), cos, -sin, T(),
+                T(), sin, cos, T(),
+                T(), T(), T(), (T)1
+            };
+        }
+
+        /**
+         * @brief Generate a 3D rotation matrix for the Y axis with angle, position, scale and skew (position and skew are 0.0, scale is 1.0)
+         * 
+         * @param angle The angle to use
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<Lines == 4 && Columns == 4
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        static mat<l, c, T> gen_y_rotation3d(T angle) {
+            const T cos = std::cos(angle);
+            const T sin = std::sin(angle);
+            return mat<c, l, T>{
+                cos, T(), sin, T(),
+                T(), (T)1, T(), T(),
+                -sin, T(), cos, T(),
+                T(), T(), T(), (T)1
+            };
+        }
+
+        /**
+         * @brief Generate a 3D rotation matrix for the Z axis with angle, position, scale and skew (position and skew are 0.0, scale is 1.0)
+         * 
+         * @param angle The angle to use
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<Lines == 4 && Columns == 4
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        static mat<l, c, T> gen_z_rotation3d(T angle) {
+            const T cos = std::cos(angle);
+            const T sin = std::sin(angle);
+            return mat<c, l, T>{
+                cos, -sin, T(), T(),
+                sin, cos, T(), T(),
+                T(), T(), (T)1, T(),
+                T(), T(), T(), (T)1
+            };
+        }
+
+        /**
+         * @brief Generate a 3D rotation matrix using a precalculated sin and cos for the X axis with angle, position, scale and skew (position and skew are 0.0, scale is 1.0)
+         * 
+         * @param sin Sine of the angle
+         * @param cos Cosine of the engle
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<Lines == 4 && Columns == 4
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        static mat<l, c, T> gen_x_rotation3d(T sin, T cos) {
+            return mat<c, l, T>{
+                (T)1, T(), T(), T(),
+                T(), cos, -sin, T(),
+                T(), sin, cos, T(),
+                T(), T(), T(), (T)1
+            };
+        }
+
+        /**
+         * @brief Generate a 3D rotation matrix using a precalculated sin and cos for the Y axis with angle, position, scale and skew (position and skew are 0.0, scale is 1.0)
+         * 
+         * @param sin Sine of the angle
+         * @param cos Cosine of the engle
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<Lines == 4 && Columns == 4
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        static mat<l, c, T> gen_y_rotation3d(T sin, T cos) {
+            return mat<c, l, T>{
+                cos, T(), sin, T(),
+                T(), (T)1, T(), T(),
+                -sin, T(), cos, T(),
+                T(), T(), T(), (T)1
+            };
+        }
+
+        /**
+         * @brief Generate a 3D rotation matrix using a precalculated sin and cos for the Z axis with angle, position, scale and skew (position and skew are 0.0, scale is 1.0)
+         * 
+         * @param sin Sine of the angle
+         * @param cos Cosine of the engle
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<Lines == 4 && Columns == 4
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        static mat<l, c, T> gen_z_rotation3d(T sin, T cos) {
+            return mat<c, l, T>{
+                cos, -sin, T(), T(),
+                sin, cos, T(), T(),
+                T(), T(), (T)1, T(),
+                T(), T(), T(), (T)1
+            };
+        }
+
+        /**
+         * @brief Rotate the matrix in 2D and return a reference to it after it has been rotated
+         * 
+         * @param angle (in radians) The angle to rotate by
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<(Lines == 2 && Columns == 2 || Lines == 3 && Columns == 3)
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        mat<l, c, T>& rotate2d(T angle) {
+            *this = gen_rotation2d(angle) * (*this);
+            return *this;
+        }
+
+        /**
+         * @brief Return a rotated version of this matrix in 2D
+         * 
+         * @param angle (in radians) The angle to rotate by
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<(Lines == 2 && Columns == 2 || Lines == 3 && Columns == 3)
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        mat<l, c, T> rotated2d(T angle) const {
+            return gen_rotation2d(angle) * (*this);
+        }
+
+        /**
+         * @brief Rotate the matrix in 3D in the order XYZ and return a reference to it after it has been rotated
+         * 
+         * @param angle (in radians) The angle to rotate by
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        mat<l, c, T>& rotate3d_xyz(const vec<3, T>& axis) {
+            *this = gen_x_rotation3d(axis.x())
+                  * gen_y_rotation3d(axis.y())
+                  * gen_z_rotation3d(axis.z()) * (*this);
+            return *this;
+        }
+
+        /**
+         * @brief Rotate the matrix in 3D in the order XZY and return a reference to it after it has been rotated
+         * 
+         * @param angle (in radians) The angle to rotate by
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        mat<l, c, T>& rotate3d_xzy(const vec<3, T>& axis) {
+            *this = gen_x_rotation3d(axis.x())
+                  * gen_z_rotation3d(axis.z())
+                  * gen_y_rotation3d(axis.y()) * (*this);
+            return *this;
+        }
+
+        /**
+         * @brief Rotate the matrix in 3D in the order YXZ and return a reference to it after it has been rotated
+         * 
+         * @param angle (in radians) The angle to rotate by
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        mat<l, c, T>& rotate3d_yxz(const vec<3, T>& axis) {
+            *this = gen_y_rotation3d(axis.y())
+                  * gen_x_rotation3d(axis.x())
+                  * gen_z_rotation3d(axis.z()) * (*this);
+            return *this;
+        }
+
+        /**
+         * @brief Rotate the matrix in 3D in the order YZX and return a reference to it after it has been rotated
+         * 
+         * @param angle (in radians) The angle to rotate by
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        mat<l, c, T>& rotate3d_yzx(const vec<3, T>& axis) {
+            *this = gen_y_rotation3d(axis.y())
+                  * gen_z_rotation3d(axis.z())
+                  * gen_x_rotation3d(axis.x()) * (*this);
+            return *this;
+        }
+
+        /**
+         * @brief Rotate the matrix in 3D in the order ZXY and return a reference to it after it has been rotated
+         * 
+         * @param angle (in radians) The angle to rotate by
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        mat<l, c, T>& rotate3d_zxy(const vec<3, T>& axis) {
+            *this = gen_z_rotation3d(axis.z())
+                  * gen_x_rotation3d(axis.x())
+                  * gen_y_rotation3d(axis.y()) * (*this);
+            return *this;
+        }
+
+        /**
+         * @brief Rotate the matrix in 3D in the order ZYX and return a reference to it after it has been rotated
+         * 
+         * @param angle (in radians) The angle to rotate by
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        mat<l, c, T>& rotate3d_zyx(const vec<3, T>& axis) {
+            *this = gen_z_rotation3d(axis.z())
+                  * gen_y_rotation3d(axis.y())
+                  * gen_x_rotation3d(axis.x()) * (*this);
+            return *this;
+        }
+
+        /**
+         * @brief Return a rotated version of this matrix in 2D in the order XYZ
+         * 
+         * @param angle (in radians) The angle to rotate by
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        mat<l, c, T> rotated3d_xyz(const vec<3, T>& axis) const {
+            return gen_x_rotation3d(axis.x())
+                 * gen_y_rotation3d(axis.y())
+                 * gen_z_rotation3d(axis.z()) * (*this);
+        }
+
+        /**
+         * @brief Return a rotated version of this matrix in 2D in the order XZY
+         * 
+         * @param angle (in radians) The angle to rotate by
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        mat<l, c, T> rotated3d_xzy(const vec<3, T>& axis) const {
+            return gen_x_rotation3d(axis.x())
+                 * gen_z_rotation3d(axis.z())
+                 * gen_y_rotation3d(axis.y()) * (*this);
+        }
+
+        /**
+         * @brief Return a rotated version of this matrix in 2D in the order YXZ
+         * 
+         * @param angle (in radians) The angle to rotate by
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        mat<l, c, T> rotated3d_yxz(const vec<3, T>& axis) const {
+            return gen_y_rotation3d(axis.y())
+                 * gen_x_rotation3d(axis.x())
+                 * gen_z_rotation3d(axis.z()) * (*this);
+        }
+
+        /**
+         * @brief Return a rotated version of this matrix in 2D in the order YZX
+         * 
+         * @param angle (in radians) The angle to rotate by
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        mat<l, c, T> rotated3d_yzx(const vec<3, T>& axis) const {
+            return gen_y_rotation3d(axis.y())
+                 * gen_z_rotation3d(axis.z())
+                 * gen_x_rotation3d(axis.x()) * (*this);
+        }
+
+        /**
+         * @brief Return a rotated version of this matrix in 2D in the order ZXY
+         * 
+         * @param angle (in radians) The angle to rotate by
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        mat<l, c, T> rotated3d_zxy(const vec<3, T>& axis) const {
+            return gen_z_rotation3d(axis.z())
+                 * gen_x_rotation3d(axis.x())
+                 * gen_y_rotation3d(axis.y()) * (*this);
+        }
+
+        /**
+         * @brief Return a rotated version of this matrix in 2D in the order ZYX
+         * 
+         * @param angle (in radians) The angle to rotate by
+         */
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+        mat<l, c, T> rotated3d_zyx(const vec<3, T>& axis) const {
+            return gen_z_rotation3d(axis.z())
+                 * gen_y_rotation3d(axis.y())
+                 * gen_x_rotation3d(axis.x()) * (*this);
+        }
+    };
+
+    using mat2f = mat<2, 2, float>;
+    using mat3f = mat<3, 3, float>;
+    using mat4f = mat<4, 4, float>;
+    using mat2d = mat<2, 2, double>;
+    using mat3d = mat<3, 3, double>;
+    using mat4d = mat<4, 4, double>;
+
+    using mat2u8 = mat<2, 2, uint8_t>;
+    using mat3u8 = mat<3, 3, uint8_t>;
+    using mat4u8 = mat<4, 4, uint8_t>;
+    using mat2i8 = mat<2, 2, int8_t>;
+    using mat3i8 = mat<3, 3, int8_t>;
+    using mat4i8 = mat<4, 4, int8_t>;
+
+    using mat2u16 = mat<2, 2, uint16_t>;
+    using mat3u16 = mat<3, 3, uint16_t>;
+    using mat4u16 = mat<4, 4, uint16_t>;
+    using mat2i16 = mat<2, 2, int16_t>;
+    using mat3i16 = mat<3, 3, int16_t>;
+    using mat4i16 = mat<4, 4, int16_t>;
+
+    using mat2u32 = mat<2, 2, uint32_t>;
+    using mat3u32 = mat<3, 3, uint32_t>;
+    using mat4u32 = mat<4, 4, uint32_t>;
+    using mat2i32 = mat<2, 2, int32_t>;
+    using mat3i32 = mat<3, 3, int32_t>;
+    using mat4i32 = mat<4, 4, int32_t>;
+
+    using mat2u64 = mat<2, 2, uint64_t>;
+    using mat3u64 = mat<3, 3, uint64_t>;
+    using mat4u64 = mat<4, 4, uint64_t>;
+    using mat2i64 = mat<2, 2, int64_t>;
+    using mat3i64 = mat<3, 3, int64_t>;
+    using mat4i64 = mat<4, 4, int64_t>;
 }
