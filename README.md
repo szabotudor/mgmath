@@ -36,10 +36,10 @@ Some usage examples for vectors and matrices
   - And so on and so forth
 - 2D matrices:
   - 2x2 for `rotation` and `scale`
-  - 3x3 for `position`, `rotation`, `scale` and `sqew`
+  - 3x3 for `position`, `rotation`, `scale` and `skew`
 - 3D matrices:
   - 3x3 for `rotation` and `scale` in all 3 axis
-  - 4x4 for `position`, `rotation`, `scale` and `sqew`
+  - 4x4 for `position`, `rotation`, `scale` and `skew`
 
 ### Extra
 - Everything is tightly packed, so a list of float vectors is the same as a larger list of floats
