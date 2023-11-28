@@ -68,25 +68,25 @@ namespace mgm {
         vec& operator=(vec<S, T>&&) = default;
 
         template<size_t VectorSize =S, class ... Ts, typename enbif<VectorSize >= 5, int>::type = 0>
-        explicit vec(const T x, const Ts ... xs) {
+        vec(const T x, const Ts ... xs) {
             static_assert(sizeof...(Ts) + 1 == S);
             size_t i = 0;
             init(i, x, xs...);
         }
 
         template<size_t VectorSize =S, typename enbif<VectorSize == 2, int>::type = 0>
-        explicit vec(const T x, const T y) {
+        vec(const T x, const T y) {
             this->x() = x;
             this->y() = y;
         }
         template<size_t VectorSize =S, typename enbif<VectorSize == 3, int>::type = 0>
-        explicit vec(const T x, const T y, const T z) {
+        vec(const T x, const T y, const T z) {
             this->x() = x;
             this->y() = y;
             this->z() = z;
         }
         template<size_t VectorSize =S, typename enbif<VectorSize == 4, int>::type = 0>
-        explicit vec(const T x, const T y, const T z, const T w) {
+        vec(const T x, const T y, const T z, const T w) {
             this->x() = x;
             this->y() = y;
             this->z() = z;
@@ -286,11 +286,6 @@ namespace mgm {
 
 #if defined(__x86_64) || defined(__amd64)
     template<>
-    inline vec<4, float>::vec(const float k) {
-        *(__m128*)data = _mm_set1_ps(k);
-    }
-
-    template<>
     inline vec<4, float> vec<4, float>::operator+(const vec<4, float> &v) const {
         const __m128 m = _mm_add_ps(*(__m128*)data, *(__m128*)v.data);
         return vec<4, float> { (float*)&m };
@@ -407,7 +402,7 @@ namespace mgm {
         mat& operator=(mat<l, c, T>&&) = default;
 
         template<class ... Ts>
-        explicit mat(const T x, const Ts ... xs) {
+        mat(const T x, const Ts ... xs) {
             size_t i = 0;
             init(i, x, xs...);
         }
