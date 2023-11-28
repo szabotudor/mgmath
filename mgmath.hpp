@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cstdint>
 #include <memory.h>
+#include <type_traits>
 
 #if defined(__x86_64) || defined(__amd64)
 #include <smmintrin.h>
@@ -14,20 +15,6 @@ namespace mgm {
     // VECTORS
     //=========
 
-    template<bool E, class I>
-    struct enbif {};
-    template<class I>
-    struct enbif<true, I> { typedef I type; };
-
-    template<typename T, typename U>
-    struct is_same_type {
-        static constexpr bool value = false;
-    };
-
-    template<typename T>
-    struct is_same_type<T, T> {
-        static constexpr bool value = true;
-    };
 
     template<size_t S, class T>
     class vec {
@@ -44,22 +31,22 @@ namespace mgm {
         public:
         T data[S]{};
 
-        template<size_t VectorSize = S, typename enbif<VectorSize >= 1, int>::type = 0>
+        template<size_t VectorSize = S, typename std::enable_if<VectorSize >= 1, int>::type = 0>
         T& x() { return data[0]; }
-        template<size_t VectorSize = S, typename enbif<VectorSize >= 2, int>::type = 0>
+        template<size_t VectorSize = S, typename std::enable_if<VectorSize >= 2, int>::type = 0>
         T& y() { return data[1]; }
-        template<size_t VectorSize = S, typename enbif<VectorSize >= 3, int>::type = 0>
+        template<size_t VectorSize = S, typename std::enable_if<VectorSize >= 3, int>::type = 0>
         T& z() { return data[2]; }
-        template<size_t VectorSize = S, typename enbif<VectorSize >= 4, int>::type = 0>
+        template<size_t VectorSize = S, typename std::enable_if<VectorSize >= 4, int>::type = 0>
         T& w() { return data[3]; }
 
-        template<size_t VectorSize = S, typename enbif<VectorSize >= 1, int>::type = 0>
+        template<size_t VectorSize = S, typename std::enable_if<VectorSize >= 1, int>::type = 0>
         const T& x() const { return data[0]; }
-        template<size_t VectorSize = S, typename enbif<VectorSize >= 2, int>::type = 0>
+        template<size_t VectorSize = S, typename std::enable_if<VectorSize >= 2, int>::type = 0>
         const T& y() const { return data[1]; }
-        template<size_t VectorSize = S, typename enbif<VectorSize >= 3, int>::type = 0>
+        template<size_t VectorSize = S, typename std::enable_if<VectorSize >= 3, int>::type = 0>
         const T& z() const { return data[2]; }
-        template<size_t VectorSize = S, typename enbif<VectorSize >= 4, int>::type = 0>
+        template<size_t VectorSize = S, typename std::enable_if<VectorSize >= 4, int>::type = 0>
         const T& w() const { return data[3]; }
 
         vec(const vec<S, T>&) = default;
@@ -67,25 +54,25 @@ namespace mgm {
         vec& operator=(const vec<S, T>&) = default;
         vec& operator=(vec<S, T>&&) = default;
 
-        template<size_t VectorSize =S, class ... Ts, typename enbif<VectorSize >= 5, int>::type = 0>
+        template<size_t VectorSize =S, class ... Ts, typename std::enable_if<VectorSize >= 5, int>::type = 0>
         vec(const T x, const Ts ... xs) {
             static_assert(sizeof...(Ts) + 1 == S);
             size_t i = 0;
             init(i, x, xs...);
         }
 
-        template<size_t VectorSize =S, typename enbif<VectorSize == 2, int>::type = 0>
+        template<size_t VectorSize =S, typename std::enable_if<VectorSize == 2, int>::type = 0>
         vec(const T x, const T y) {
             this->x() = x;
             this->y() = y;
         }
-        template<size_t VectorSize =S, typename enbif<VectorSize == 3, int>::type = 0>
+        template<size_t VectorSize =S, typename std::enable_if<VectorSize == 3, int>::type = 0>
         vec(const T x, const T y, const T z) {
             this->x() = x;
             this->y() = y;
             this->z() = z;
         }
-        template<size_t VectorSize =S, typename enbif<VectorSize == 4, int>::type = 0>
+        template<size_t VectorSize =S, typename std::enable_if<VectorSize == 4, int>::type = 0>
         vec(const T x, const T y, const T z, const T w) {
             this->x() = x;
             this->y() = y;
@@ -440,7 +427,7 @@ namespace mgm {
             return res;
         }
 
-        template<size_t l2, size_t c2, typename enbif<c == l2, int>::type = 0>
+        template<size_t l2, size_t c2, typename std::enable_if<c == l2, int>::type = 0>
         mat<l, c2, T> operator*(const mat<l2, c2, T>& m) const {
             mat<l, c2, T> res{};
             for (int i = 0; i < l; i++)
@@ -497,7 +484,7 @@ namespace mgm {
         /**
          * @brief Calculate the determinant of the matrix
          */
-        template<size_t Lines = l, size_t Columns = c, typename enbif<Lines >= 3 && Columns == Lines, int>::type = 0>
+        template<size_t Lines = l, size_t Columns = c, typename std::enable_if<Lines >= 3 && Columns == Lines, int>::type = 0>
         T det() const {
             T res{};
             bool ff = false;
@@ -514,7 +501,7 @@ namespace mgm {
         /**
          * @brief Calculate the determinant of the matrix
          */
-        template<size_t Lines = l, size_t Columns = c, typename enbif<Lines == 2 && Columns == 2, int>::type = 0>
+        template<size_t Lines = l, size_t Columns = c, typename std::enable_if<Lines == 2 && Columns == 2, int>::type = 0>
         T det() const {
             return data[0][0] * data[1][1] - data[0][1] * data[1][0];
         }
@@ -525,8 +512,8 @@ namespace mgm {
          * @param angle The angle to use
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<Lines == 2 && Columns == 2
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<Lines == 2 && Columns == 2
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_rotation2d(T angle) {
             const T cos = std::cos(angle);
             const T sin = std::sin(angle);
@@ -542,8 +529,8 @@ namespace mgm {
          * @param angle The angle to use
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<Lines == 3 && Columns == 3
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<Lines == 3 && Columns == 3
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_rotation2d(T angle) {
             const T cos = std::cos(angle);
             const T sin = std::sin(angle);
@@ -560,8 +547,8 @@ namespace mgm {
          * @param angle The angle to use
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<Lines == 3 && Columns == 3
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<Lines == 3 && Columns == 3
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_x_rotation3d(T angle) {
             const T cos = std::cos(angle);
             const T sin = std::sin(angle);
@@ -578,8 +565,8 @@ namespace mgm {
          * @param angle The angle to use
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<Lines == 3 && Columns == 3
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<Lines == 3 && Columns == 3
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_y_rotation3d(T angle) {
             const T cos = std::cos(angle);
             const T sin = std::sin(angle);
@@ -596,8 +583,8 @@ namespace mgm {
          * @param angle The angle to use
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<Lines == 3 && Columns == 3
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<Lines == 3 && Columns == 3
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_z_rotation3d(T angle) {
             const T cos = std::cos(angle);
             const T sin = std::sin(angle);
@@ -612,11 +599,11 @@ namespace mgm {
          * @brief Generate a 3D rotation matrix using a precalculated sin and cos for the X axis with angle and scale (scale is 1.0)
          * 
          * @param sin Sine of the angle
-         * @param cos Cosine of the engle
+         * @param cos Cosine of the angle
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<Lines == 3 && Columns == 3
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<Lines == 3 && Columns == 3
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_x_rotation3d(T sin, T cos) {
             return mat<c, l, T>{
                 (T)1, T(), T(),
@@ -629,11 +616,11 @@ namespace mgm {
          * @brief Generate a 3D rotation matrix using a precalculated sin and cos for the Y axis with angle and scale (scale is 1.0)
          * 
          * @param sin Sine of the angle
-         * @param cos Cosine of the engle
+         * @param cos Cosine of the angle
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<Lines == 3 && Columns == 3
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<Lines == 3 && Columns == 3
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_y_rotation3d(T sin, T cos) {
             return mat<c, l, T>{
                 cos, T(), sin,
@@ -646,11 +633,11 @@ namespace mgm {
          * @brief Generate a 3D rotation matrix using a precalculated sin and cos for the Z axis with angle and scale (scale is 1.0)
          * 
          * @param sin Sine of the angle
-         * @param cos Cosine of the engle
+         * @param cos Cosine of the angle
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<Lines == 3 && Columns == 3
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<Lines == 3 && Columns == 3
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_z_rotation3d(T sin, T cos) {
             return mat<c, l, T>{
                 cos, -sin, T(),
@@ -665,8 +652,8 @@ namespace mgm {
          * @param angle The angle to use
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<Lines == 4 && Columns == 4
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<Lines == 4 && Columns == 4
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_x_rotation3d(T angle) {
             const T cos = std::cos(angle);
             const T sin = std::sin(angle);
@@ -684,8 +671,8 @@ namespace mgm {
          * @param angle The angle to use
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<Lines == 4 && Columns == 4
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<Lines == 4 && Columns == 4
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_y_rotation3d(T angle) {
             const T cos = std::cos(angle);
             const T sin = std::sin(angle);
@@ -703,8 +690,8 @@ namespace mgm {
          * @param angle The angle to use
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<Lines == 4 && Columns == 4
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<Lines == 4 && Columns == 4
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_z_rotation3d(T angle) {
             const T cos = std::cos(angle);
             const T sin = std::sin(angle);
@@ -720,11 +707,11 @@ namespace mgm {
          * @brief Generate a 3D rotation matrix using a precalculated sin and cos for the X axis with angle, position, scale and skew (position and skew are 0.0, scale is 1.0)
          * 
          * @param sin Sine of the angle
-         * @param cos Cosine of the engle
+         * @param cos Cosine of the angle
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<Lines == 4 && Columns == 4
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<Lines == 4 && Columns == 4
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_x_rotation3d(T sin, T cos) {
             return mat<c, l, T>{
                 (T)1, T(), T(), T(),
@@ -738,11 +725,11 @@ namespace mgm {
          * @brief Generate a 3D rotation matrix using a precalculated sin and cos for the Y axis with angle, position, scale and skew (position and skew are 0.0, scale is 1.0)
          * 
          * @param sin Sine of the angle
-         * @param cos Cosine of the engle
+         * @param cos Cosine of the angle
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<Lines == 4 && Columns == 4
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<Lines == 4 && Columns == 4
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_y_rotation3d(T sin, T cos) {
             return mat<c, l, T>{
                 cos, T(), sin, T(),
@@ -756,11 +743,11 @@ namespace mgm {
          * @brief Generate a 3D rotation matrix using a precalculated sin and cos for the Z axis with angle, position, scale and skew (position and skew are 0.0, scale is 1.0)
          * 
          * @param sin Sine of the angle
-         * @param cos Cosine of the engle
+         * @param cos Cosine of the angle
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<Lines == 4 && Columns == 4
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<Lines == 4 && Columns == 4
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_z_rotation3d(T sin, T cos) {
             return mat<c, l, T>{
                 cos, -sin, T(), T(),
@@ -776,8 +763,8 @@ namespace mgm {
          * @param angle (in radians) The angle to rotate by
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<(Lines == 2 && Columns == 2 || Lines == 3 && Columns == 3)
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<(Lines == 2 && Columns == 2 || Lines == 3 && Columns == 3)
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         mat<l, c, T>& rotate2d(T angle) {
             *this = gen_rotation2d(angle) * (*this);
             return *this;
@@ -789,8 +776,8 @@ namespace mgm {
          * @param angle (in radians) The angle to rotate by
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<(Lines == 2 && Columns == 2 || Lines == 3 && Columns == 3)
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<(Lines == 2 && Columns == 2 || Lines == 3 && Columns == 3)
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         mat<l, c, T> rotated2d(T angle) const {
             return gen_rotation2d(angle) * (*this);
         }
@@ -801,8 +788,8 @@ namespace mgm {
          * @param angle (in radians) The angle to rotate by
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         mat<l, c, T>& rotate3d_xyz(const vec<3, T>& axis) {
             *this = gen_x_rotation3d(axis.x())
                   * gen_y_rotation3d(axis.y())
@@ -816,8 +803,8 @@ namespace mgm {
          * @param angle (in radians) The angle to rotate by
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         mat<l, c, T>& rotate3d_xzy(const vec<3, T>& axis) {
             *this = gen_x_rotation3d(axis.x())
                   * gen_z_rotation3d(axis.z())
@@ -831,8 +818,8 @@ namespace mgm {
          * @param angle (in radians) The angle to rotate by
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         mat<l, c, T>& rotate3d_yxz(const vec<3, T>& axis) {
             *this = gen_y_rotation3d(axis.y())
                   * gen_x_rotation3d(axis.x())
@@ -846,8 +833,8 @@ namespace mgm {
          * @param angle (in radians) The angle to rotate by
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         mat<l, c, T>& rotate3d_yzx(const vec<3, T>& axis) {
             *this = gen_y_rotation3d(axis.y())
                   * gen_z_rotation3d(axis.z())
@@ -861,8 +848,8 @@ namespace mgm {
          * @param angle (in radians) The angle to rotate by
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         mat<l, c, T>& rotate3d_zxy(const vec<3, T>& axis) {
             *this = gen_z_rotation3d(axis.z())
                   * gen_x_rotation3d(axis.x())
@@ -876,8 +863,8 @@ namespace mgm {
          * @param angle (in radians) The angle to rotate by
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         mat<l, c, T>& rotate3d_zyx(const vec<3, T>& axis) {
             *this = gen_z_rotation3d(axis.z())
                   * gen_y_rotation3d(axis.y())
@@ -891,8 +878,8 @@ namespace mgm {
          * @param angle (in radians) The angle to rotate by
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         mat<l, c, T> rotated3d_xyz(const vec<3, T>& axis) const {
             return gen_x_rotation3d(axis.x())
                  * gen_y_rotation3d(axis.y())
@@ -905,8 +892,8 @@ namespace mgm {
          * @param angle (in radians) The angle to rotate by
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         mat<l, c, T> rotated3d_xzy(const vec<3, T>& axis) const {
             return gen_x_rotation3d(axis.x())
                  * gen_z_rotation3d(axis.z())
@@ -919,8 +906,8 @@ namespace mgm {
          * @param angle (in radians) The angle to rotate by
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         mat<l, c, T> rotated3d_yxz(const vec<3, T>& axis) const {
             return gen_y_rotation3d(axis.y())
                  * gen_x_rotation3d(axis.x())
@@ -933,8 +920,8 @@ namespace mgm {
          * @param angle (in radians) The angle to rotate by
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         mat<l, c, T> rotated3d_yzx(const vec<3, T>& axis) const {
             return gen_y_rotation3d(axis.y())
                  * gen_z_rotation3d(axis.z())
@@ -947,8 +934,8 @@ namespace mgm {
          * @param angle (in radians) The angle to rotate by
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         mat<l, c, T> rotated3d_zxy(const vec<3, T>& axis) const {
             return gen_z_rotation3d(axis.z())
                  * gen_x_rotation3d(axis.x())
@@ -961,8 +948,8 @@ namespace mgm {
          * @param angle (in radians) The angle to rotate by
          */
         template<size_t Lines = l, size_t Columns = c, class Type = T,
-            typename enbif<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
-            && (is_same_type<Type, float>::value || is_same_type<Type, double>::value), int>::type = 0>
+            typename std::enable_if<(Lines == 3 && Columns == 3 || Lines == 4 && Columns == 4)
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         mat<l, c, T> rotated3d_zyx(const vec<3, T>& axis) const {
             return gen_z_rotation3d(axis.z())
                  * gen_y_rotation3d(axis.y())
