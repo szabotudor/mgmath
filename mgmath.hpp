@@ -4,13 +4,15 @@
 #include <memory.h>
 #include <ostream>
 #include <type_traits>
-#include <xmmintrin.h>
+#include <cassert>
 
 #if defined(__x86_64) || defined(__amd64)
+#include <xmmintrin.h>
 #include <smmintrin.h>
 #endif
 
-#define ASSURE_SIZE(SIZE) size_t VectorSize = S, typename std::enable_if<VectorSize >= SIZE, int>::type = 0
+#define ASSURE_SIZE(SIZE) size_t VectorSize = S, typename std::enable_if<VectorSize >= SIZE, bool>::type = true
+#define FORCE_SIZE(SIZE) size_t VectorSize = S, typename std::enable_if<VectorSize == SIZE, bool>::type = true
 
 
 namespace mgm {
@@ -47,39 +49,52 @@ namespace mgm {
         using IntList = typename IntListGenerator<n>::Type;
 
         template<typename... Ts>
-        static void add(const T* a, const T* b, T* r, TypeList<Ts...>) {
+        static inline void add(const T* a, const T* b, T* r, TypeList<Ts...>) {
             size_t i = 0;
             (((Ts&)r[i++] = (const Ts&)a[i] + (const Ts&)b[i]), ...);
         }
         template<typename... Ts>
-        static void sub(const T* a, const T* b, T* r, TypeList<Ts...>) {
+        static inline void sub(const T* a, const T* b, T* r, TypeList<Ts...>) {
             size_t i = 0;
             (((Ts&)r[i++] = (const Ts&)a[i] - (const Ts&)b[i]), ...);
         }
         template<typename... Ts>
-        static void mul(const T* a, const T* b, T* r, TypeList<Ts...>) {
+        static inline void mul(const T* a, const T* b, T* r, TypeList<Ts...>) {
             size_t i = 0;
             (((Ts&)r[i++] = (const Ts&)a[i] * (const Ts&)b[i]), ...);
         }
         template<typename... Ts>
-        static void div(const T* a, const T* b, T* r, TypeList<Ts...>) {
+        static inline void div(const T* a, const T* b, T* r, TypeList<Ts...>) {
             size_t i = 0;
             (((Ts&)r[i++] = (const Ts&)a[i] / (const Ts&)b[i]), ...);
         }
         template<typename... Ts>
-        static void mod(const T* a, const T* b, T* r, TypeList<Ts...>) {
+        static inline void mod(const T* a, const T* b, T* r, TypeList<Ts...>) {
             size_t i = 0;
             (((Ts&)r[i++] = (const Ts&)a[i] % (const Ts&)b[i]), ...);
         }
 
-        template<class ... Ts>
-        void init(size_t& i, const T x, const Ts ... xs) {
-            data[i] = x;
-            init(++i, xs...);
+        static inline void real_dot(const T& a, const T& b, T& r, size_t& i) {
+            r += a * b;
+            ++i;
         }
-        void init(size_t& i, const T x1, const T x2) {
-            data[i] = x1;
-            data[i + 1] = x2;
+        template<typename... Ts>
+        static inline T real_dot(const T* a, const T* b, TypeList<Ts...>) {
+            size_t i = 0;
+            T sum = 0;
+            ((real_dot((const Ts&)a[i], (const Ts&)b[i], (Ts&)sum, i)), ...);
+            return sum;
+        }
+
+        template<typename... Ts>
+        static inline void max(const T* a, const T* b, T* r, TypeList<Ts...>) {
+            size_t i = 0;
+            (((Ts&)r[i++] = ((const Ts&)a[i] > (const Ts&)b[i]) ? (const Ts&)a[i] : (const Ts&)b[i]), ...);
+        }
+        template<typename... Ts>
+        static inline void min(const T* a, const T* b, T* r, TypeList<Ts...>) {
+            size_t i = 0;
+            (((Ts&)r[i++] = ((const Ts&)a[i] < (const Ts&)b[i]) ? (const Ts&)a[i] : (const Ts&)b[i]), ...);
         }
 
         public:
@@ -461,25 +476,25 @@ namespace mgm {
         vec& operator=(const vec<S, T>&) = default;
         vec& operator=(vec<S, T>&&) = default;
 
-        template<size_t VectorSize =S, class ... Ts, typename std::enable_if<VectorSize >= 5, int>::type = 0>
-        vec(const T x, const Ts ... xs) {
-            static_assert(sizeof...(Ts) + 1 == S);
+        template<class ... Ts, ASSURE_SIZE(5)>
+        vec(const Ts ... xs) {
+            static_assert(sizeof...(Ts) + 1 == S, "Incorrect number of arguments to vec constructor");
             size_t i = 0;
-            init(i, x, xs...);
+            ((data[i++] = xs), ...);
         }
 
-        template<size_t VectorSize =S, typename std::enable_if<VectorSize == 2, int>::type = 0>
+        template<FORCE_SIZE(2)>
         vec(const T x, const T y) {
             this->x() = x;
             this->y() = y;
         }
-        template<size_t VectorSize =S, typename std::enable_if<VectorSize == 3, int>::type = 0>
+        template<FORCE_SIZE(3)>
         vec(const T x, const T y, const T z) {
             this->x() = x;
             this->y() = y;
             this->z() = z;
         }
-        template<size_t VectorSize =S, typename std::enable_if<VectorSize == 4, int>::type = 0>
+        template<FORCE_SIZE(4)>
         vec(const T x, const T y, const T z, const T w) {
             this->x() = x;
             this->y() = y;
@@ -497,15 +512,23 @@ namespace mgm {
         }
 
         T& operator[](const size_t i) {
+#if !defined(NDEBUG)
             if (i < S)
+#endif
                 return data[i];
-            return data[S - 1];
+#if !defined(NDEBUG)
+            assert(false && "Index out of bounds");
+#endif
         }
 
         const T& operator[](const size_t i) const {
+#if !defined(NDEBUG)
             if (i < S)
+#endif
                 return data[i];
-            return data[S - 1];
+#if !defined(NDEBUG)
+            assert(false && "Index out of bounds");
+#endif
         }
 
         vec<S, T> operator+(const vec<S, T>& v) const {
@@ -583,10 +606,7 @@ namespace mgm {
          * @param v The second vector in the dot product operation
          */
         T dot(const vec<S, T>& v) const {
-            T res = data[0] * v.data[0];
-            for (size_t i = 1; i < S; i++)
-                res += data[i] * v.data[i];
-            return res;
+            return real_dot(data, v.data, IntList<S>{});
         }
 
         /**
@@ -632,19 +652,6 @@ namespace mgm {
             return (v - *this).normalized();
         }
 
-        private:
-        static T max(const T& k1, const T& k2) {
-            if (k1 > k2)
-                return k1;
-            return k2;
-        }
-        static T min(const T& k1, const T& k2) {
-            if (k1 < k2)
-                return k1;
-            return k2;
-        }
-
-        public:
         /**
          * @brief Return the a vector with all values minimum between the two
          * 
@@ -652,9 +659,8 @@ namespace mgm {
          * @param v2 The second vector
          */
         static vec<S, T> max(const vec<S, T>& v1, const vec<S, T>& v2) {
-            vec<S, T> res{};
-            for (size_t i = 0; i < S; i++)
-                res[i] = max(v1.data[i], v2.data[i]);
+            vec<S, T> res;
+            max(v1.data, v2.data, res.data, IntList<S>{});
             return res;
         }
 
@@ -665,9 +671,8 @@ namespace mgm {
          * @param v2 The second vector
          */
         static vec<S, T> min(const vec<S, T>& v1, const vec<S, T>& v2) {
-            vec<S, T> res{};
-            for (size_t i = 0; i < S; i++)
-                res[i] = min(v1.data[i], v2.data[i]);
+            vec<S, T> res;
+            min(v1.data, v2.data, res.data, IntList<S>{});
             return res;
         }
 
@@ -777,6 +782,26 @@ namespace mgm {
     }
 
     template<>
+    inline vec<2, float> vec<2, float>::max(const vec<2UL, float> &v1, const vec<2UL, float> &v2) {
+        __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v1.data));
+        __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v2.data));
+        __m128 res = _mm_max_ps(a, b);
+        vec<2, float> r;
+        _mm_storel_pi(reinterpret_cast<__m64*>(r.data), res);
+        return r;
+    }
+    template<>
+    inline vec<2, float> vec<2, float>::min(const vec<2UL, float> &v1, const vec<2UL, float> &v2) {
+        __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v1.data));
+        __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v2.data));
+        __m128 res = _mm_min_ps(a, b);
+        vec<2, float> r;
+        _mm_storel_pi(reinterpret_cast<__m64*>(r.data), res);
+        return r;
+    }
+
+
+    template<>
     inline vec<3, float> vec<3, float>::operator+(const vec<3, float>& v) const {
         __m128 a = _mm_set_ps(0, data[2], data[1], data[0]);
         __m128 b = _mm_set_ps(0, v.data[2], v.data[1], v.data[0]);
@@ -846,6 +871,26 @@ namespace mgm {
     }
 
     template<>
+    inline vec<3, float> vec<3, float>::max(const vec<3UL, float> &v1, const vec<3UL, float> &v2) {
+        __m128 a = _mm_set_ps(0, v1.data[2], v1.data[1], v1.data[0]);
+        __m128 b = _mm_set_ps(0, v2.data[2], v2.data[1], v2.data[0]);
+        __m128 res = _mm_max_ps(a, b);
+        vec<3, float> r;
+        memcpy(r.data, &res, sizeof(float) * 3);
+        return r;
+    }
+    template<>
+    inline vec<3, float> vec<3, float>::min(const vec<3UL, float> &v1, const vec<3UL, float> &v2) {
+        __m128 a = _mm_set_ps(0, v1.data[2], v1.data[1], v1.data[0]);
+        __m128 b = _mm_set_ps(0, v2.data[2], v2.data[1], v2.data[0]);
+        __m128 res = _mm_min_ps(a, b);
+        vec<3, float> r;
+        memcpy(r.data, &res, sizeof(float) * 3);
+        return r;
+    }
+
+
+    template<>
     inline vec<4, float> vec<4, float>::operator+(const vec<4, float>& v) const {
         __m128 a = _mm_loadu_ps(data);
         __m128 b = _mm_loadu_ps(v.data);
@@ -912,6 +957,25 @@ namespace mgm {
         __m128 res = _mm_div_ps(a, b);
         _mm_storeu_ps(data, res);
         return *this;
+    }
+
+    template<>
+    inline vec<4, float> vec<4, float>::max(const vec<4UL, float> &v1, const vec<4UL, float> &v2) {
+        __m128 a = _mm_loadu_ps(v1.data);
+        __m128 b = _mm_loadu_ps(v2.data);
+        __m128 res = _mm_max_ps(a, b);
+        vec<4, float> r;
+        _mm_storeu_ps(r.data, res);
+        return r;
+    }
+    template<>
+    inline vec<4, float> vec<4, float>::min(const vec<4UL, float> &v1, const vec<4UL, float> &v2) {
+        __m128 a = _mm_loadu_ps(v1.data);
+        __m128 b = _mm_loadu_ps(v2.data);
+        __m128 res = _mm_min_ps(a, b);
+        vec<4, float> r;
+        _mm_storeu_ps(r.data, res);
+        return r;
     }
 #endif
 
