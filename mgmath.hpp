@@ -531,8 +531,8 @@ namespace mgm {
                 return data[i];
 #if !defined(NDEBUG)
             assert(false && "Index out of bounds");
-#endif
             return data[0];
+#endif
         }
 
         const T& operator[](const size_t i) const {
@@ -542,8 +542,8 @@ namespace mgm {
                 return data[i];
 #if !defined(NDEBUG)
             assert(false && "Index out of bounds");
-#endif
             return data[0];
+#endif
         }
 
         vec<S, T> operator+(const vec<S, T>& v) const {
