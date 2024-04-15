@@ -73,6 +73,11 @@ namespace mgm {
             size_t i = 0;
             (((Ts&)r[i++] = (const Ts&)a[i] % (const Ts&)b[i]), ...);
         }
+        template<typename... Ts>
+        static inline bool eq(const T* a, const T* b, TypeList<Ts...>) {
+            size_t i = 0;
+            return (((Ts&)a[i] == (Ts&)b[i]) && ...);
+        }
 
         static inline void real_dot(const T& a, const T& b, T& r, size_t& i) {
             r += a * b;
@@ -471,10 +476,18 @@ namespace mgm {
         template<ASSURE_SIZE(4)> vec(const T& x, const vec<3, T>& v) : data{{x, v.x(), v.y(), v.z()}} {}
 #endif
 
-        vec(const vec<S, T>&) = default;
-        vec(vec<S, T>&&) = default;
-        vec& operator=(const vec<S, T>&) = default;
-        vec& operator=(vec<S, T>&&) = default;
+        vec(const vec<S, T>& v) { memcpy(data, v.data, S * sizeof(T)); }
+        vec(vec<S, T>&& v) { memcpy(data, v.data, S * sizeof(T)); }
+        vec& operator=(const vec<S, T>& v) {
+            if (this != &v)
+                memcpy(data, v.data, S * sizeof(T));
+            return *this;
+        }
+        vec& operator=(vec<S, T>&& v) {
+            if (this != &v)
+                memcpy(data, v.data, S * sizeof(T));
+            return *this;
+        }
 
         template<class ... Ts, ASSURE_SIZE(5)>
         vec(const Ts ... xs) {
@@ -519,6 +532,7 @@ namespace mgm {
 #if !defined(NDEBUG)
             assert(false && "Index out of bounds");
 #endif
+            return data[0];
         }
 
         const T& operator[](const size_t i) const {
@@ -529,6 +543,7 @@ namespace mgm {
 #if !defined(NDEBUG)
             assert(false && "Index out of bounds");
 #endif
+            return data[0];
         }
 
         vec<S, T> operator+(const vec<S, T>& v) const {
@@ -555,6 +570,12 @@ namespace mgm {
             vec<S, T> res;
             mod(data, k, res.data, IntList<S>{});
             return res;
+        }
+        bool operator==(const vec<S, T>& v) const {
+            return eq(data, v.data, IntList<S>{});
+        }
+        bool operator!=(const vec<S, T>& v) const {
+            return !eq(data, v.data, IntList<S>{});
         }
 
         vec<S, T>& operator+=(const vec<S, T>& v) {
