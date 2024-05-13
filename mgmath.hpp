@@ -48,35 +48,45 @@ namespace mgm {
         template <size_t n>
         using IntList = typename IntListGenerator<n>::Type;
 
+        static inline void add_one(const T& a, const T& b, T& r, size_t& i) { r = a + b; ++i; }
+        static inline void sub_one(const T& a, const T& b, T& r, size_t& i) { r = a - b; ++i; }
+        static inline void mul_one(const T& a, const T& b, T& r, size_t& i) { r = a * b; ++i; }
+        static inline void div_one(const T& a, const T& b, T& r, size_t& i) { r = a / b; ++i; }
+        static inline void mod_one(const T& a, const T& b, T& r, size_t& i) { r = a % b; ++i; }
+        static inline void eq_one(const T& a, const T& b, bool& r, size_t& i) { r = a == b; ++i; }
+
+
         template<typename... Ts>
         static inline void add(const T* a, const T* b, T* r, TypeList<Ts...>) {
             size_t i = 0;
-            (((Ts&)r[i++] = (const Ts&)a[i] + (const Ts&)b[i]), ...);
+            (add_one((const Ts&)a[i], (const Ts&)b[i], (Ts&)r[i], i), ...);
         }
         template<typename... Ts>
         static inline void sub(const T* a, const T* b, T* r, TypeList<Ts...>) {
             size_t i = 0;
-            (((Ts&)r[i++] = (const Ts&)a[i] - (const Ts&)b[i]), ...);
+            (sub_one((const Ts&)a[i], (const Ts&)b[i], (Ts&)r[i], i), ...);
         }
         template<typename... Ts>
         static inline void mul(const T* a, const T* b, T* r, TypeList<Ts...>) {
             size_t i = 0;
-            (((Ts&)r[i++] = (const Ts&)a[i] * (const Ts&)b[i]), ...);
+            (mul_one((const Ts&)a[i], (const Ts&)b[i], (Ts&)r[i], i), ...);
         }
         template<typename... Ts>
         static inline void div(const T* a, const T* b, T* r, TypeList<Ts...>) {
             size_t i = 0;
-            (((Ts&)r[i++] = (const Ts&)a[i] / (const Ts&)b[i]), ...);
+            (div_one((const Ts&)a[i], (const Ts&)b[i], (Ts&)r[i], i), ...);
         }
         template<typename... Ts>
         static inline void mod(const T* a, const T* b, T* r, TypeList<Ts...>) {
             size_t i = 0;
-            (((Ts&)r[i++] = (const Ts&)a[i] % (const Ts&)b[i]), ...);
+            (mod_one((const Ts&)a[i], (const Ts&)b[i], (Ts&)r[i], i), ...);
         }
         template<typename... Ts>
         static inline bool eq(const T* a, const T* b, TypeList<Ts...>) {
             size_t i = 0;
-            return (((Ts&)a[i] == (Ts&)b[i]) && ...);
+            bool result = true;
+            (eq_one((const Ts&)a[i], (const Ts&)b[i], result, i), ...);
+            return result;
         }
 
         static inline void real_dot(const T& a, const T& b, T& r, size_t& i) {
@@ -91,15 +101,18 @@ namespace mgm {
             return sum;
         }
 
+        static inline void max_one(const T& a, const T& b, T& r, size_t& i) { r = a > b ? a : b; ++i; }
+        static inline void min_one(const T& a, const T& b, T& r, size_t& i) { r = a < b ? a : b; ++i; }
+
         template<typename... Ts>
         static inline void max(const T* a, const T* b, T* r, TypeList<Ts...>) {
             size_t i = 0;
-            (((Ts&)r[i++] = ((const Ts&)a[i] > (const Ts&)b[i]) ? (const Ts&)a[i] : (const Ts&)b[i]), ...);
+            (max_one((const Ts&)a[i], (const Ts&)b[i], (Ts&)r[i], i), ...);
         }
         template<typename... Ts>
         static inline void min(const T* a, const T* b, T* r, TypeList<Ts...>) {
             size_t i = 0;
-            (((Ts&)r[i++] = ((const Ts&)a[i] < (const Ts&)b[i]) ? (const Ts&)a[i] : (const Ts&)b[i]), ...);
+            (min_one((const Ts&)a[i], (const Ts&)b[i], (Ts&)r[i], i), ...);
         }
 
         public:
