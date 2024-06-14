@@ -6,7 +6,7 @@
 #include <type_traits>
 #include <cassert>
 
-#if defined(__x86_64) || defined(__amd64)
+#if defined(__x86_64) || defined(__amd64) || defined(_M_X64) || defined(_M_AMD64)
 #include <xmmintrin.h>
 #include <smmintrin.h>
 #endif
@@ -53,7 +53,7 @@ namespace mgm {
         static inline void mul_one(const T& a, const T& b, T& r, size_t& i) { r = a * b; ++i; }
         static inline void div_one(const T& a, const T& b, T& r, size_t& i) { r = a / b; ++i; }
         static inline void mod_one(const T& a, const T& b, T& r, size_t& i) { r = a % b; ++i; }
-        static inline void eq_one(const T& a, const T& b, bool& r, size_t& i) { r = a == b; ++i; }
+        static inline void eq_one(const T& a, const T& b, bool& r, size_t& i) { r = r && a == b; ++i; }
 
 
         template<typename... Ts>
@@ -734,101 +734,101 @@ namespace mgm {
         }
     };
 
-#if (defined(__x86_64) || defined(__amd64)) && defined(MGMATH_SIMD)
+#if (defined(__x86_64) || defined(__amd64) || defined(_M_X64) || defined(_M_AMD64)) && defined(MGMATH_SIMD)
     template<>
     inline vec<2, float>::vec(const float& k) {
-        __m128 a = _mm_set1_ps(k);
+        const __m128 a = _mm_set1_ps(k);
         _mm_storel_pi(reinterpret_cast<__m64*>(data), a);
     }
     template<>
     inline vec<4, float>::vec(const float& k) {
-        __m128 a = _mm_set1_ps(k);
+        const __m128 a = _mm_set1_ps(k);
         _mm_store_ps(data, a);
     }
 
     template<>
     inline vec<2, float> vec<2, float>::operator+(const vec<2, float>& v) const {
-        __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(data));
-        __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v.data));
-        __m128 res = _mm_add_ps(a, b);
+        const __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(data));
+        const __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v.data));
+        const __m128 res = _mm_add_ps(a, b);
         vec<2, float> r;
         _mm_storel_pi(reinterpret_cast<__m64*>(r.data), res);
         return r;
     }
     template<>
     inline vec<2, float> vec<2, float>::operator-(const vec<2, float>& v) const {
-        __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(data));
-        __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v.data));
-        __m128 res = _mm_sub_ps(a, b);
+        const __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(data));
+        const __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v.data));
+        const __m128 res = _mm_sub_ps(a, b);
         vec<2, float> r;
         _mm_storel_pi(reinterpret_cast<__m64*>(r.data), res);
         return r;
     }
     template<>
     inline vec<2, float> vec<2, float>::operator*(const vec<2, float>& v) const {
-        __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(data));
-        __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v.data));
-        __m128 res = _mm_mul_ps(a, b);
+        const __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(data));
+        const __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v.data));
+        const __m128 res = _mm_mul_ps(a, b);
         vec<2, float> r;
         _mm_storel_pi(reinterpret_cast<__m64*>(r.data), res);
         return r;
     }
     template<>
     inline vec<2, float> vec<2, float>::operator/(const vec<2, float>& v) const {
-        __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(data));
-        __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v.data));
-        __m128 res = _mm_div_ps(a, b);
+        const __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(data));
+        const __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v.data));
+        const __m128 res = _mm_div_ps(a, b);
         vec<2, float> r;
         _mm_storel_pi(reinterpret_cast<__m64*>(r.data), res);
         return r;
     }
     template<>
     inline vec<2, float>& vec<2, float>::operator+=(const vec<2, float>& v) {
-        __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(data));
-        __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v.data));
-        __m128 res = _mm_add_ps(a, b);
+        const __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(data));
+        const __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v.data));
+        const __m128 res = _mm_add_ps(a, b);
         _mm_storel_pi(reinterpret_cast<__m64*>(data), res);
         return *this;
     }
     template<>
     inline vec<2, float>& vec<2, float>::operator-=(const vec<2, float>& v) {
-        __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(data));
-        __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v.data));
-        __m128 res = _mm_sub_ps(a, b);
+        const __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(data));
+        const __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v.data));
+        const __m128 res = _mm_sub_ps(a, b);
         _mm_storel_pi(reinterpret_cast<__m64*>(data), res);
         return *this;
     }
     template<>
     inline vec<2, float>& vec<2, float>::operator*=(const vec<2, float>& v) {
-        __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(data));
-        __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v.data));
-        __m128 res = _mm_mul_ps(a, b);
+        const __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(data));
+        const __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v.data));
+        const __m128 res = _mm_mul_ps(a, b);
         _mm_storel_pi(reinterpret_cast<__m64*>(data), res);
         return *this;
     }
     template<>
     inline vec<2, float>& vec<2, float>::operator/=(const vec<2, float>& v) {
-        __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(data));
-        __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v.data));
-        __m128 res = _mm_div_ps(a, b);
+        const __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(data));
+        const __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v.data));
+        const __m128 res = _mm_div_ps(a, b);
         _mm_storel_pi(reinterpret_cast<__m64*>(data), res);
         return *this;
     }
 
     template<>
     inline vec<2, float> vec<2, float>::max(const vec<2UL, float> &v1, const vec<2UL, float> &v2) {
-        __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v1.data));
-        __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v2.data));
-        __m128 res = _mm_max_ps(a, b);
+        const __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v1.data));
+        const __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v2.data));
+        const __m128 res = _mm_max_ps(a, b);
         vec<2, float> r;
         _mm_storel_pi(reinterpret_cast<__m64*>(r.data), res);
         return r;
     }
     template<>
     inline vec<2, float> vec<2, float>::min(const vec<2UL, float> &v1, const vec<2UL, float> &v2) {
-        __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v1.data));
-        __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v2.data));
-        __m128 res = _mm_min_ps(a, b);
+        const __m128 a = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v1.data));
+        const __m128 b = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64*>(v2.data));
+        const __m128 res = _mm_min_ps(a, b);
         vec<2, float> r;
         _mm_storel_pi(reinterpret_cast<__m64*>(r.data), res);
         return r;
@@ -837,87 +837,87 @@ namespace mgm {
 
     template<>
     inline vec<3, float> vec<3, float>::operator+(const vec<3, float>& v) const {
-        __m128 a = _mm_set_ps(0, data[2], data[1], data[0]);
-        __m128 b = _mm_set_ps(0, v.data[2], v.data[1], v.data[0]);
-        __m128 res = _mm_add_ps(a, b);
+        const __m128 a = _mm_set_ps(0, data[2], data[1], data[0]);
+        const __m128 b = _mm_set_ps(0, v.data[2], v.data[1], v.data[0]);
+        const __m128 res = _mm_add_ps(a, b);
         vec<3, float> r;
         memcpy(r.data, &res, sizeof(float) * 3);
         return r;
     }
     template<>
     inline vec<3, float> vec<3, float>::operator-(const vec<3, float>& v) const {
-        __m128 a = _mm_set_ps(0, data[2], data[1], data[0]);
-        __m128 b = _mm_set_ps(0, v.data[2], v.data[1], v.data[0]);
-        __m128 res = _mm_sub_ps(a, b);
+        const __m128 a = _mm_set_ps(0, data[2], data[1], data[0]);
+        const __m128 b = _mm_set_ps(0, v.data[2], v.data[1], v.data[0]);
+        const __m128 res = _mm_sub_ps(a, b);
         vec<3, float> r;
         memcpy(r.data, &res, sizeof(float) * 3);
         return r;
     }
     template<>
     inline vec<3, float> vec<3, float>::operator*(const vec<3, float>& v) const {
-        __m128 a = _mm_set_ps(0, data[2], data[1], data[0]);
-        __m128 b = _mm_set_ps(0, v.data[2], v.data[1], v.data[0]);
-        __m128 res = _mm_mul_ps(a, b);
+        const __m128 a = _mm_set_ps(0, data[2], data[1], data[0]);
+        const __m128 b = _mm_set_ps(0, v.data[2], v.data[1], v.data[0]);
+        const __m128 res = _mm_mul_ps(a, b);
         vec<3, float> r;
         memcpy(r.data, &res, sizeof(float) * 3);
         return r;
     }
     template<>
     inline vec<3, float> vec<3, float>::operator/(const vec<3, float>& v) const {
-        __m128 a = _mm_set_ps(0, data[2], data[1], data[0]);
-        __m128 b = _mm_set_ps(0, v.data[2], v.data[1], v.data[0]);
-        __m128 res = _mm_div_ps(a, b);
+        const __m128 a = _mm_set_ps(0, data[2], data[1], data[0]);
+        const __m128 b = _mm_set_ps(0, v.data[2], v.data[1], v.data[0]);
+        const __m128 res = _mm_div_ps(a, b);
         vec<3, float> r;
         memcpy(r.data, &res, sizeof(float) * 3);
         return r;
     }
     template<>
     inline vec<3, float>& vec<3, float>::operator+=(const vec<3, float>& v) {
-        __m128 a = _mm_set_ps(0, data[2], data[1], data[0]);
-        __m128 b = _mm_set_ps(0, v.data[2], v.data[1], v.data[0]);
-        __m128 res = _mm_add_ps(a, b);
+        const __m128 a = _mm_set_ps(0, data[2], data[1], data[0]);
+        const __m128 b = _mm_set_ps(0, v.data[2], v.data[1], v.data[0]);
+        const __m128 res = _mm_add_ps(a, b);
         memcpy(data, &res, sizeof(float) * 3);
         return *this;
     }
     template<>
     inline vec<3, float>& vec<3, float>::operator-=(const vec<3, float>& v) {
-        __m128 a = _mm_set_ps(0, data[2], data[1], data[0]);
-        __m128 b = _mm_set_ps(0, v.data[2], v.data[1], v.data[0]);
-        __m128 res = _mm_sub_ps(a, b);
+        const __m128 a = _mm_set_ps(0, data[2], data[1], data[0]);
+        const __m128 b = _mm_set_ps(0, v.data[2], v.data[1], v.data[0]);
+        const __m128 res = _mm_sub_ps(a, b);
         memcpy(data, &res, sizeof(float) * 3);
         return *this;
     }
     template<>
     inline vec<3, float>& vec<3, float>::operator*=(const vec<3, float>& v) {
-        __m128 a = _mm_set_ps(0, data[2], data[1], data[0]);
-        __m128 b = _mm_set_ps(0, v.data[2], v.data[1], v.data[0]);
-        __m128 res = _mm_mul_ps(a, b);
+        const __m128 a = _mm_set_ps(0, data[2], data[1], data[0]);
+        const __m128 b = _mm_set_ps(0, v.data[2], v.data[1], v.data[0]);
+        const __m128 res = _mm_mul_ps(a, b);
         memcpy(data, &res, sizeof(float) * 3);
         return *this;
     }
     template<>
     inline vec<3, float>& vec<3, float>::operator/=(const vec<3, float>& v) {
-        __m128 a = _mm_set_ps(0, data[2], data[1], data[0]);
-        __m128 b = _mm_set_ps(0, v.data[2], v.data[1], v.data[0]);
-        __m128 res = _mm_div_ps(a, b);
+        const __m128 a = _mm_set_ps(0, data[2], data[1], data[0]);
+        const __m128 b = _mm_set_ps(0, v.data[2], v.data[1], v.data[0]);
+        const __m128 res = _mm_div_ps(a, b);
         memcpy(data, &res, sizeof(float) * 3);
         return *this;
     }
 
     template<>
     inline vec<3, float> vec<3, float>::max(const vec<3UL, float> &v1, const vec<3UL, float> &v2) {
-        __m128 a = _mm_set_ps(0, v1.data[2], v1.data[1], v1.data[0]);
-        __m128 b = _mm_set_ps(0, v2.data[2], v2.data[1], v2.data[0]);
-        __m128 res = _mm_max_ps(a, b);
+        const __m128 a = _mm_set_ps(0, v1.data[2], v1.data[1], v1.data[0]);
+        const __m128 b = _mm_set_ps(0, v2.data[2], v2.data[1], v2.data[0]);
+        const __m128 res = _mm_max_ps(a, b);
         vec<3, float> r;
         memcpy(r.data, &res, sizeof(float) * 3);
         return r;
     }
     template<>
     inline vec<3, float> vec<3, float>::min(const vec<3UL, float> &v1, const vec<3UL, float> &v2) {
-        __m128 a = _mm_set_ps(0, v1.data[2], v1.data[1], v1.data[0]);
-        __m128 b = _mm_set_ps(0, v2.data[2], v2.data[1], v2.data[0]);
-        __m128 res = _mm_min_ps(a, b);
+        const __m128 a = _mm_set_ps(0, v1.data[2], v1.data[1], v1.data[0]);
+        const __m128 b = _mm_set_ps(0, v2.data[2], v2.data[1], v2.data[0]);
+        const __m128 res = _mm_min_ps(a, b);
         vec<3, float> r;
         memcpy(r.data, &res, sizeof(float) * 3);
         return r;
@@ -926,87 +926,87 @@ namespace mgm {
 
     template<>
     inline vec<4, float> vec<4, float>::operator+(const vec<4, float>& v) const {
-        __m128 a = _mm_loadu_ps(data);
-        __m128 b = _mm_loadu_ps(v.data);
-        __m128 res = _mm_add_ps(a, b);
+        const __m128 a = _mm_loadu_ps(data);
+        const __m128 b = _mm_loadu_ps(v.data);
+        const __m128 res = _mm_add_ps(a, b);
         vec<4, float> r;
         _mm_storeu_ps(r.data, res);
         return r;
     }
     template<>
     inline vec<4, float> vec<4, float>::operator-(const vec<4, float>& v) const {
-        __m128 a = _mm_loadu_ps(data);
-        __m128 b = _mm_loadu_ps(v.data);
-        __m128 res = _mm_sub_ps(a, b);
+        const __m128 a = _mm_loadu_ps(data);
+        const __m128 b = _mm_loadu_ps(v.data);
+        const __m128 res = _mm_sub_ps(a, b);
         vec<4, float> r;
         _mm_storeu_ps(r.data, res);
         return r;
     }
     template<>
     inline vec<4, float> vec<4, float>::operator*(const vec<4, float>& v) const {
-        __m128 a = _mm_loadu_ps(data);
-        __m128 b = _mm_loadu_ps(v.data);
-        __m128 res = _mm_mul_ps(a, b);
+        const __m128 a = _mm_loadu_ps(data);
+        const __m128 b = _mm_loadu_ps(v.data);
+        const __m128 res = _mm_mul_ps(a, b);
         vec<4, float> r;
         _mm_storeu_ps(r.data, res);
         return r;
     }
     template<>
     inline vec<4, float> vec<4, float>::operator/(const vec<4, float>& v) const {
-        __m128 a = _mm_loadu_ps(data);
-        __m128 b = _mm_loadu_ps(v.data);
-        __m128 res = _mm_div_ps(a, b);
+        const __m128 a = _mm_loadu_ps(data);
+        const __m128 b = _mm_loadu_ps(v.data);
+        const __m128 res = _mm_div_ps(a, b);
         vec<4, float> r;
         _mm_storeu_ps(r.data, res);
         return r;
     }
     template<>
     inline vec<4, float>& vec<4, float>::operator+=(const vec<4, float>& v) {
-        __m128 a = _mm_loadu_ps(data);
-        __m128 b = _mm_loadu_ps(v.data);
-        __m128 res = _mm_add_ps(a, b);
+        const __m128 a = _mm_loadu_ps(data);
+        const __m128 b = _mm_loadu_ps(v.data);
+        const __m128 res = _mm_add_ps(a, b);
         _mm_storeu_ps(data, res);
         return *this;
     }
     template<>
     inline vec<4, float>& vec<4, float>::operator-=(const vec<4, float>& v) {
-        __m128 a = _mm_loadu_ps(data);
-        __m128 b = _mm_loadu_ps(v.data);
-        __m128 res = _mm_sub_ps(a, b);
+        const __m128 a = _mm_loadu_ps(data);
+        const __m128 b = _mm_loadu_ps(v.data);
+        const __m128 res = _mm_sub_ps(a, b);
         _mm_storeu_ps(data, res);
         return *this;
     }
     template<>
     inline vec<4, float>& vec<4, float>::operator*=(const vec<4, float>& v) {
-        __m128 a = _mm_loadu_ps(data);
-        __m128 b = _mm_loadu_ps(v.data);
-        __m128 res = _mm_mul_ps(a, b);
+        const __m128 a = _mm_loadu_ps(data);
+        const __m128 b = _mm_loadu_ps(v.data);
+        const __m128 res = _mm_mul_ps(a, b);
         _mm_storeu_ps(data, res);
         return *this;
     }
     template<>
     inline vec<4, float>& vec<4, float>::operator/=(const vec<4, float>& v) {
-        __m128 a = _mm_loadu_ps(data);
-        __m128 b = _mm_loadu_ps(v.data);
-        __m128 res = _mm_div_ps(a, b);
+        const __m128 a = _mm_loadu_ps(data);
+        const __m128 b = _mm_loadu_ps(v.data);
+        const __m128 res = _mm_div_ps(a, b);
         _mm_storeu_ps(data, res);
         return *this;
     }
 
     template<>
     inline vec<4, float> vec<4, float>::max(const vec<4UL, float> &v1, const vec<4UL, float> &v2) {
-        __m128 a = _mm_loadu_ps(v1.data);
-        __m128 b = _mm_loadu_ps(v2.data);
-        __m128 res = _mm_max_ps(a, b);
+        const __m128 a = _mm_loadu_ps(v1.data);
+        const __m128 b = _mm_loadu_ps(v2.data);
+        const __m128 res = _mm_max_ps(a, b);
         vec<4, float> r;
         _mm_storeu_ps(r.data, res);
         return r;
     }
     template<>
     inline vec<4, float> vec<4, float>::min(const vec<4UL, float> &v1, const vec<4UL, float> &v2) {
-        __m128 a = _mm_loadu_ps(v1.data);
-        __m128 b = _mm_loadu_ps(v2.data);
-        __m128 res = _mm_min_ps(a, b);
+        const __m128 a = _mm_loadu_ps(v1.data);
+        const __m128 b = _mm_loadu_ps(v2.data);
+        const __m128 res = _mm_min_ps(a, b);
         vec<4, float> r;
         _mm_storeu_ps(r.data, res);
         return r;
@@ -1082,8 +1082,12 @@ namespace mgm {
         }
 
         explicit mat(const T x = T()) {
-            for (size_t i = 0; i < l && i < c; i++)
-                data[i][i] = x;
+            if constexpr (l == c)
+                for (size_t i = 0; i < l; i++)
+                    data[i][i] = x;
+            else
+                for (size_t i = 0; i < l && i < c; i++)
+                    data[i][i] = x;
         }
 
         explicit mat(const T* k) {
