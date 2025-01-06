@@ -479,14 +479,14 @@ namespace mgm {
         template<ASSURE_SIZE(4)> vec<4, T> wwwz() const { return vec<4, T>{w(), w(), w(), z()}; }
         template<ASSURE_SIZE(4)> vec<4, T> wwww() const { return vec<4, T>{w(), w(), w(), w()}; }
 
-        template<ASSURE_SIZE(3)> vec(const vec<2, T>& v, const T& z) : data{{v.x(), v.y(), z}} {}
-        template<ASSURE_SIZE(3)> vec(const T& x, const vec<2, T>& v) : data{{x, v.x(), v.y()}} {}
-        template<ASSURE_SIZE(4)> vec(const vec<2, T>& v1, const vec<2, T>& v2) : data{{v1.x(), v1.y(), v2.x(), v2.y()}} {}
-        template<ASSURE_SIZE(4)> vec(const vec<2, T>& v, const T& z, const T& w) : data{{v.x(), v.y(), z, w}} {}
-        template<ASSURE_SIZE(4)> vec(const T& x, const vec<2, T>& v, const T& w) : data{{x, v.x(), v.y(), w}} {}
-        template<ASSURE_SIZE(4)> vec(const T& x, const T& y, const vec<2, T>& v) : data{{x, y, v.x(), v.y()}} {}
-        template<ASSURE_SIZE(4)> vec(const vec<3, T>& v, const T& w) : data{{v.x(), v.y(), v.z(), w}} {}
-        template<ASSURE_SIZE(4)> vec(const T& x, const vec<3, T>& v) : data{{x, v.x(), v.y(), v.z()}} {}
+        template<ASSURE_SIZE(3)> vec(const vec<2, T>& v, const T& z) : data{v.x(), v.y(), z} {}
+        template<ASSURE_SIZE(3)> vec(const T& x, const vec<2, T>& v) : data{x, v.x(), v.y()} {}
+        template<ASSURE_SIZE(4)> vec(const vec<2, T>& v1, const vec<2, T>& v2) : data{v1.x(), v1.y(), v2.x(), v2.y()} {}
+        template<ASSURE_SIZE(4)> vec(const vec<2, T>& v, const T& z, const T& w) : data{v.x(), v.y(), z, w} {}
+        template<ASSURE_SIZE(4)> vec(const T& x, const vec<2, T>& v, const T& w) : data{x, v.x(), v.y(), w} {}
+        template<ASSURE_SIZE(4)> vec(const T& x, const T& y, const vec<2, T>& v) : data{x, y, v.x(), v.y()} {}
+        template<ASSURE_SIZE(4)> vec(const vec<3, T>& v, const T& w) : data{v.x(), v.y(), v.z(), w} {}
+        template<ASSURE_SIZE(4)> vec(const T& x, const vec<3, T>& v) : data{x, v.x(), v.y(), v.z()} {}
 #endif
 
         vec(const vec<S, T>& v) { memcpy(data, v.data, S * sizeof(T)); }
