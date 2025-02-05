@@ -19,8 +19,8 @@ Some usage examples for vectors and matrices
 - You can also use the `vec` template to create your own vector
   - `vec<4, float>` is the equivalent of `vec4f`
   - `vec<3, uint16_t>` is the equivalent of `vec3u16`
-- The `vec` template contains functions `x()` `y()` `z()` `w()`, equivalent to getting an element using `[0]` `[1]` `[2]` `[3]`
-  - `vec<2, float> v;` - `v[0] = 10;` is the same as `v.x() = 10;`
+- The `vec` template contains the members `x` `y` `z` `w`, equivalent to getting an element using `[0]` `[1]` `[2]` `[3]`, if the vector has a size of `2` `3` or `4`
+  - `vec<2, float> v;` - `v[0] = 10;` is the same as `v.x = 10;`
 
 ### Matrices
 - To create a basic matrix, it's similar to vector
