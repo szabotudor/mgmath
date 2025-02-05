@@ -41,6 +41,13 @@ Some usage examples for vectors and matrices
   - 3x3 for `rotation` and `scale` in all 3 axis
   - 4x4 for `position`, `rotation`, `scale` and `skew`
 
+### Quaternions
+- Quaternions are used to handle rotations in a more optimized, and easier way than with rotation matrices:
+  - `quatf` and `quatd` are available and contain utility functions for rotating vectors
+  - First, a `quat` must be generated using the static `from_angle` or `from_angle_safe` function in the `quat` class
+  - Next, that `quat` can be used to rotate a vector, or can be multiplied with another `quat` to combine the 2 rotations
+  - `as_rotation_mat3` and `as_rotation_mat4` are also available to generation rotation matrices from a quaternion
+
 ### Extra
 - Everything is tightly packed, so a list of float vectors is the same as a larger list of floats
   - This means you can easily send them to OpenGL, Vulkan or other APIs that require you to send data in large packs
@@ -48,6 +55,6 @@ Some usage examples for vectors and matrices
 
 ### To Do
 - [ ] Add remaining transform functions for matrices
+- [ ] Fix SIMD problems on AMD when compiled with MSVC
 - [ ] Add SIMD support for every possible vector
 - [ ] Add SIMD support on arm
-- [ ] Add transform tree (old transform parents sucked)

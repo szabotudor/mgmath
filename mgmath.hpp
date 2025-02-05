@@ -63,8 +63,10 @@ namespace mgm {
         }
 
         vec_storage(const T& k = T{}) : _data(k) {}
+        
+        template<typename... Ts>
+        vec_storage(Ts&&... args) : _data(std::forward<Ts>(args)...) {}
 
-        vec_storage() = default;
         vec_storage(const vec_storage&) = default;
         vec_storage(vec_storage&&) = default;
         vec_storage& operator=(const vec_storage&) = default;
@@ -107,7 +109,8 @@ namespace mgm {
 
         vec_storage(const T& k = T{}) : x(k), y(k), z(k), w(k) {}
 
-        vec_storage() = default;
+        vec_storage(const T& x_v, const T& y_v, const T& z_v = 0, const T& w_v = 0) : x(x_v), y(y_v), z(z_v), w(w_v) {}
+
         vec_storage(const vec_storage&) = default;
         vec_storage(vec_storage&&) = default;
         vec_storage& operator=(const vec_storage&) = default;
@@ -146,7 +149,8 @@ namespace mgm {
 
         vec_storage(const T& k = T{}) : x(k), y(k), z(k) {}
 
-        vec_storage() = default;
+        vec_storage(const T& x_v, const T& y_v, const T& z_v = 0) : x(x_v), y(y_v), z(z_v) {}
+
         vec_storage(const vec_storage&) = default;
         vec_storage(vec_storage&&) = default;
         vec_storage& operator=(const vec_storage&) = default;
@@ -182,7 +186,8 @@ namespace mgm {
 
         vec_storage(const T& k = T{}) : x(k), y(k) {}
 
-        vec_storage() = default;
+        vec_storage(const T& x_v, const T& y_v) : x(x_v), y(y_v) {}
+
         vec_storage(const vec_storage&) = default;
         vec_storage(vec_storage&&) = default;
         vec_storage& operator=(const vec_storage&) = default;
@@ -194,6 +199,7 @@ namespace mgm {
 
     template<size_t S, class T>
     class vec : public vec_storage<S, T> {
+        public:
 
         template<ASSURE_SIZE(1)>
         T& _x() { return vec_storage<S, T>::_x(); }
@@ -689,21 +695,21 @@ namespace mgm {
 
         template<ASSURE_EXACT_SIZE(2)>
         vec(const T x, const T y) {
-            this->_x() = x;
-            this->_y() = y;
+            _x() = x;
+            _y() = y;
         }
         template<ASSURE_EXACT_SIZE(3)>
         vec(const T x, const T y, const T z) {
-            this->_x() = x;
-            this->_y() = y;
-            this->_z() = z;
+            _x() = x;
+            _y() = y;
+            _z() = z;
         }
         template<ASSURE_EXACT_SIZE(4)>
         vec(const T x, const T y, const T z, const T w) {
-            this->_x() = x;
-            this->_y() = y;
-            this->_z() = z;
-            this->_w() = w;
+            _x() = x;
+            _y() = y;
+            _z() = z;
+            _w() = w;
         }
 
         vec(const T& k = T{}) : vec_storage<S, T>(k) {}
@@ -724,6 +730,9 @@ namespace mgm {
             vec<S, T> res{};
             sub(data(), v.data(), res.data(), IntList<S>{});
             return res;
+        }
+        vec<S, T> operator-() const {
+            return vec<S, T>{} - *this;
         }
         vec<S, T> operator*(const vec<S, T>& v) const {
             vec<S, T> res{};
@@ -777,7 +786,7 @@ namespace mgm {
         friend std::ostream& operator<<(std::ostream& os, const vec<S, T>& v) {
             os << "(";
             for (size_t i = 0; i < S; i++) {
-                os << v._data[i];
+                os << v.data()[i];
                 if (i != S - 1)
                     os << ", ";
             }
@@ -786,7 +795,7 @@ namespace mgm {
         }
         friend std::istream& operator>>(std::istream& is, vec<S, T>& v) {
             for (size_t i = 0; i < S; i++)
-                is >> v._data[i];
+                is >> v.data()[i];
             return is;
         }
 
@@ -804,6 +813,13 @@ namespace mgm {
          */
         T length() const {
             return std::sqrt(this->dot(*this));
+        }
+
+        /**
+         * @brief Calculate the squared length of the vector (faster than the actual length, useful for fast comparisons)
+         */
+        T length_squared() const {
+            return this->dot(*this);
         }
 
         /**
@@ -887,6 +903,17 @@ namespace mgm {
         vec<S, T>& clamp(const vec<S, T>& low, const vec<S, T>& high) {
             *this = max(min(*this, high), low);
             return *this;
+        }
+
+        /**
+         * @brief Perform a linear interpolation frmo this vector to another destination vector
+         * 
+         * @param destination The vector to interpolate towards
+         * @param weight The amount to interpolate by
+         * @return The result of the interpolation
+         */
+        vec<S, T> lerp(const vec<S, T>& destination, T weight) const {
+            return *this + weight * (destination - *this);
         }
     };
 
@@ -1639,4 +1666,172 @@ namespace mgm {
     using mat2i64 = mat<2, 2, int64_t>;
     using mat3i64 = mat<3, 3, int64_t>;
     using mat4i64 = mat<4, 4, int64_t>;
+
+
+
+    //=============
+    // QUATERNIONS
+    //=============
+
+    template<typename T>
+    class quat : public vec<4, T> {
+        public:
+
+        using vec<4, T>::x;
+        using vec<4, T>::y;
+        using vec<4, T>::z;
+        using vec<4, T>::w;
+
+        using vec<4, T>::vec;
+
+        explicit quat(const vec<4, T>& v) : vec<4, T>(v) {}
+        operator vec<4, T>() const { return this->xyzw(); }
+
+        quat<T> operator*(const quat<T>& q) const {
+            return {
+                w * q.x + x * q.w + y * q.z - z * q.y,
+                w * q.y + y * q.w + z * q.x - x * q.z,
+                w * q.z + z * q.w + x * q.y - y * q.x,
+                w * q.w - x * q.x - y * q.y - z * q.z
+            };
+        }
+        quat<T>& operator*=(const quat<T>& q) {
+            return *this = *this * q;
+        }
+
+        /**
+         * @brief Calculate the quaternion's conjugate `q*`
+         */
+        quat<T> conjugate() const {
+            return quat{-x, -y, -z, w};
+        }
+
+        /**
+         * @brief Calculate the quaternion's magnitude (equivalent to length)
+         */
+        T norm() const {
+            return vec<4, T>::length();
+        }
+
+        /**
+         * @brief Calculate the quaternion's inverse `(q*) / (q.norm()^2)`
+         */
+        quat<T> inv() const {
+            const auto len_sq = vec<4, T>::length_squared();
+            if (len_sq == 0)
+                throw std::runtime_error("Cannot invert zero quaternion");
+            return static_cast<quat>(conjugate() / len_sq);
+        }
+
+        /**
+         * @brief Rotate a vector using this quaternion
+         * 
+         * @param v The vector to rotate
+         * @return The rotated version of the vector
+         */
+        vec<3, T> rotate(const vec<3, T>& v) const {
+            const auto res = *this * quat<T>{v, 0.0f} * conjugate();
+            return vec<3, T>{res.x, res.y, res.z};
+        }
+
+        /**
+         * @brief Rotate a vector using this quaternion, making sure it is a normalized quaternion first, suitable for rotations
+         * 
+         * @param v The vector to rotate
+         * @return The rotate version of the vector
+         */
+        vec<3, T> rotate_safe(const vec<3, T>& v) const {
+            const auto res = *this * quat<T>{v, 0.0f} * inv();
+            return vec<3, T>{res.x, res.y, res.z};
+        }
+        
+        /**
+         * @brief Generate a quaternion from an angle rotated around a given axis (normalized direction vector)
+         * 
+         * @param axis The axis to rotate around
+         * @param angle The angle in radians to rotate by
+         * @return The calculated quaternion
+         */
+        static inline quat<T> from_angle(const vec<3, T>& axis, T angle) {
+            if (angle == 0)
+                return quat<T>{0, 0, 0, 1};
+
+            const auto ha = angle / 2;
+            const auto s = std::sin(ha);
+            const auto c = std::cos(ha);
+            return quat<T>{axis * s, c};
+        }
+
+        /**
+         * @brief Generate a quaternion from an angle rotated around a given axis, making sure the axis is a valid normalized vector, suitable for reprezenting axis
+         * 
+         * @param axis The axis to rotate around
+         * @param angle The angle in radians to rotate by
+         * @return The calculated quaternion
+         */
+        static inline quat<T> from_angle_safe(const vec<3, T>& axis, const T angle) {
+            if (angle == 0)
+                return quat<T>{0, 0, 0, 1};
+
+            if (angle > std::numbers::pi * 2)
+                angle = angle - std::numbers::pi * 2 * std::floor(angle / (std::numbers::pi * 2));
+            else if (angle < -std::numbers::pi * 2)
+                angle = angle + std::numbers::pi * 2 * std::ceil(angle / (std::numbers::pi * 2));
+
+            const auto ha = angle / 2;
+            const auto s = std::sin(ha);
+            const auto c = std::cos(ha);
+            return quat<T>{axis.normalized() * s, c};
+        }
+
+        /**
+         * @brief Generate a rotation matrix from this quaternion, that will rotate a vector the same way this quaternion would
+         */
+        mat<4, 4, T> as_rotation_mat4() const {
+            return mat<4, 4, T>{
+                1 - 2 * (y * y + z * z), 2 * (x * y - z * w),     2 * (x * z + y * w),     0,
+                2 * (x * y + z * w),     1 - 2 * (x * x + z * z), 2 * (y * z - x * w),     0,
+                2 * (x * z - y * w),     2 * (y * z + x * w),     1 - 2 * (x * x + y * y), 0,
+                0,                       0,                       0,                       1
+            };
+        }
+        /**
+         * @brief Generate a rotation matrix from this quaternion, that will rotate a vector the same way this quaternion would
+         */
+        mat<3, 3, T> as_rotation_mat3() const {
+            return mat<3, 3, T>{
+                1 - 2 * (y * y + z * z), 2 * (x * y - z * w),     2 * (x * z + y * w),
+                2 * (x * y + z * w),     1 - 2 * (x * x + z * z), 2 * (y * z - x * w),
+                2 * (x * z - y * w),     2 * (y * z + x * w),     1 - 2 * (x * x + y * y)
+            };
+        }
+
+        /**
+         * @brief Perform a spherical linear interpolation (slerp) from this quaternion to a destination quaternion
+         * 
+         * @param destination The destination to interpolate towards
+         * @param weight The amount to interpolate by
+         * @return The result of the interpolation
+         */
+        quat<T> slerp(quat<T> destination, T weight) const {
+            auto d = this->dot(destination);
+
+            if (d < 0) {
+                d = -d;
+                destination = -destination;
+            }
+
+            // Because of loss of precision
+            static constexpr auto THRESHOLD = 0.9995;
+            if (d > THRESHOLD)
+                return static_cast<quat<T>>(this->lerp(destination).normalized());
+
+            const auto theta = std::acos(d) * weight;
+
+            return *this * std::cos(theta) + (destination - *this * d).normalized() * std::sin(theta);
+        }
+    };
+
+    using quatf = quat<float>;
+    using quatd = quat<double>;
 }
