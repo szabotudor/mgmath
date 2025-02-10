@@ -777,6 +777,19 @@ namespace mgm {
             return *this;
         }
 
+        friend T operator+(const T& l, const vec<S, T>& r) {
+            return vec<S, T>{l} + r;
+        }
+        friend T operator-(const T& l, const vec<S, T>& r) {
+            return vec<S, T>{l} - r;
+        }
+        friend T operator*(const T& l, const vec<S, T>& r) {
+            return vec<S, T>{l} * r;
+        }
+        friend T operator/(const T& l, const vec<S, T>& r) {
+            return vec<S, T>{l} / r;
+        }
+
         T* begin() { return data(); }
         T* end() { return data() + S; }
 
@@ -786,7 +799,7 @@ namespace mgm {
         friend std::ostream& operator<<(std::ostream& os, const vec<S, T>& v) {
             os << "(";
             for (size_t i = 0; i < S; i++) {
-                os << v.data()[i];
+                os << v._data[i];
                 if (i != S - 1)
                     os << ", ";
             }
@@ -795,7 +808,7 @@ namespace mgm {
         }
         friend std::istream& operator>>(std::istream& is, vec<S, T>& v) {
             for (size_t i = 0; i < S; i++)
-                is >> v.data()[i];
+                is >> v._data[i];
             return is;
         }
 
@@ -1683,6 +1696,8 @@ namespace mgm {
         using vec<4, T>::w;
 
         using vec<4, T>::vec;
+
+        quat() : vec<4, T>::x(0), vec<4, T>::y(0), vec<4, T>::z(0), vec<4, T>::w(1) {}
 
         explicit quat(const vec<4, T>& v) : vec<4, T>(v) {}
         operator vec<4, T>() const { return this->xyzw(); }
