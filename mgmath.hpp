@@ -106,6 +106,20 @@ namespace mgm {
                     #endif
             }
         }
+        const T& operator[](const size_t i) const {
+            switch (i) {
+                case 0: return x;
+                case 1: return y;
+                case 2: return z;
+                case 3: return w;
+                default:
+                    #if !defined(NDEBUG)
+                    throw std::runtime_error{"Index out of range"};
+                    #else
+                    return x;
+                    #endif
+            }
+        }
 
         vec_storage(const T& k = T{}) : x(k), y(k), z(k), w(k) {}
 
@@ -146,6 +160,19 @@ namespace mgm {
                     #endif
             }
         }
+        const T& operator[](const size_t i) const {
+            switch (i) {
+                case 0: return x;
+                case 1: return y;
+                case 2: return z;
+                default:
+                    #if !defined(NDEBUG)
+                    throw std::runtime_error{"Index out of range"};
+                    #else
+                    return x;
+                    #endif
+            }
+        }
 
         vec_storage(const T& k = T{}) : x(k), y(k), z(k) {}
 
@@ -172,6 +199,18 @@ namespace mgm {
         const T& _y() const { return y; }
 
         T& operator[](const size_t i) {
+            switch (i) {
+                case 0: return x;
+                case 1: return y;
+                default:
+                    #if !defined(NDEBUG)
+                    throw std::runtime_error{"Index out of range"};
+                    #else
+                    return x;
+                    #endif
+            }
+        }
+        const T& operator[](const size_t i) const {
             switch (i) {
                 case 0: return x;
                 case 1: return y;
@@ -777,16 +816,16 @@ namespace mgm {
             return *this;
         }
 
-        friend T operator+(const T& l, const vec<S, T>& r) {
+        friend vec<S, T> operator+(const T& l, const vec<S, T>& r) {
             return vec<S, T>{l} + r;
         }
-        friend T operator-(const T& l, const vec<S, T>& r) {
+        friend vec<S, T> operator-(const T& l, const vec<S, T>& r) {
             return vec<S, T>{l} - r;
         }
-        friend T operator*(const T& l, const vec<S, T>& r) {
+        friend vec<S, T> operator*(const T& l, const vec<S, T>& r) {
             return vec<S, T>{l} * r;
         }
-        friend T operator/(const T& l, const vec<S, T>& r) {
+        friend vec<S, T> operator/(const T& l, const vec<S, T>& r) {
             return vec<S, T>{l} / r;
         }
 
@@ -1317,9 +1356,9 @@ namespace mgm {
         template<size_t l2, size_t c2, typename std::enable_if<c == l2, int>::type = 0>
         mat<l, c2, T> operator*(const mat<l2, c2, T>& m) const {
             mat<l, c2, T> res{};
-            for (int i = 0; i < l; i++)
-                for (int j = 0; j < c2; j++)
-                    for (int k = 0; k < c; k++)
+            for (size_t i = 0; i < l; i++)
+                for (size_t j = 0; j < c2; j++)
+                    for (size_t k = 0; k < c; k++)
                         res[i][j] += data[i][k] * m[k][j];
             return res;
         }
@@ -1697,7 +1736,7 @@ namespace mgm {
 
         using vec<4, T>::vec;
 
-        quat() : vec<4, T>::x(0), vec<4, T>::y(0), vec<4, T>::z(0), vec<4, T>::w(1) {}
+        quat() : vec<4, T>(0, 0, 0, 1) {}
 
         explicit quat(const vec<4, T>& v) : vec<4, T>(v) {}
         operator vec<4, T>() const { return this->xyzw(); }
@@ -1785,15 +1824,15 @@ namespace mgm {
          * @return The calculated quaternion
          */
         static inline quat<T> from_angle_safe(const vec<3, T>& axis, const T angle) {
-            if (angle == 0)
-                return quat<T>{0, 0, 0, 1};
+            if (angle == T(0))
+                return quat<T>{T(0), T(0), T(0), T(1)};
 
-            if (angle > std::numbers::pi * 2)
-                angle = angle - std::numbers::pi * 2 * std::floor(angle / (std::numbers::pi * 2));
-            else if (angle < -std::numbers::pi * 2)
-                angle = angle + std::numbers::pi * 2 * std::ceil(angle / (std::numbers::pi * 2));
+            if (angle > std::numbers::pi * T(2))
+                angle = angle - std::numbers::pi * T(2) * std::floor(angle / (std::numbers::pi * T(2)));
+            else if (angle < -std::numbers::pi * T(2))
+                angle = angle + std::numbers::pi * T(2) * std::ceil(angle / (std::numbers::pi * T(2)));
 
-            const auto ha = angle / 2;
+            const auto ha = angle / T(2);
             const auto s = std::sin(ha);
             const auto c = std::cos(ha);
             return quat<T>{axis.normalized() * s, c};
@@ -1804,10 +1843,10 @@ namespace mgm {
          */
         mat<4, 4, T> as_rotation_mat4() const {
             return mat<4, 4, T>{
-                1 - 2 * (y * y + z * z), 2 * (x * y - z * w),     2 * (x * z + y * w),     0,
-                2 * (x * y + z * w),     1 - 2 * (x * x + z * z), 2 * (y * z - x * w),     0,
-                2 * (x * z - y * w),     2 * (y * z + x * w),     1 - 2 * (x * x + y * y), 0,
-                0,                       0,                       0,                       1
+                T(1) - T(2) * (y * y + z * z), T(2) * (x * y - z * w),     T(2) * (x * z + y * w),     T(0),
+                T(2) * (x * y + z * w),     T(1) - T(2) * (x * x + z * z), T(2) * (y * z - x * w),     T(0),
+                T(2) * (x * z - y * w),     T(2) * (y * z + x * w),     T(1) - T(2) * (x * x + y * y), T(0),
+                T(0),                       T(0),                       T(0),                       T(1)
             };
         }
         /**
@@ -1815,9 +1854,9 @@ namespace mgm {
          */
         mat<3, 3, T> as_rotation_mat3() const {
             return mat<3, 3, T>{
-                1 - 2 * (y * y + z * z), 2 * (x * y - z * w),     2 * (x * z + y * w),
-                2 * (x * y + z * w),     1 - 2 * (x * x + z * z), 2 * (y * z - x * w),
-                2 * (x * z - y * w),     2 * (y * z + x * w),     1 - 2 * (x * x + y * y)
+                T(1) - T(2) * (y * y + z * z), T(2) * (x * y - z * w),     T(2) * (x * z + y * w),
+                T(2) * (x * y + z * w),     T(1) - T(2) * (x * x + z * z), T(2) * (y * z - x * w),
+                T(2) * (x * z - y * w),     T(2) * (y * z + x * w),     T(1) - T(2) * (x * x + y * y)
             };
         }
 
@@ -1831,13 +1870,13 @@ namespace mgm {
         quat<T> slerp(quat<T> destination, T weight) const {
             auto d = this->dot(destination);
 
-            if (d < 0) {
+            if (d < T(0)) {
                 d = -d;
                 destination = -destination;
             }
 
             // Because of loss of precision
-            static constexpr auto THRESHOLD = 0.9995;
+            static constexpr auto THRESHOLD = T(0.9995);
             if (d > THRESHOLD)
                 return static_cast<quat<T>>(this->lerp(destination).normalized());
 
