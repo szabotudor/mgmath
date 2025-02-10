@@ -1682,6 +1682,19 @@ namespace mgm {
                 T(), T(), T(), (T)1
             };
         }
+
+        template<size_t Lines = l, size_t Columns = c, class Type = T,
+            typename std::enable_if<Lines == 4 && Columns == 4
+            && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
+        static mat<l, c, T> gen_perspective_projection(T fov, T aspect, T near, T far) {
+            T tan_half_fov = std::tan(fov / T(2));
+            return mat<4, 4, T>{
+                T(1) / (aspect * tan_half_fov), T(0),                 T(0),                                T(0),
+                T(0),                           T(1) / tan_half_fov,  T(0),                                T(0),
+                T(0),                           T(0),                 -(far + near) / (far - near),        -(T(2) * far * near) / (far - near),
+                T(0),                           T(0),                 T(-1), T(0)
+            };
+        }
     };
 
     using mat2f = mat<2, 2, float>;
@@ -1736,7 +1749,7 @@ namespace mgm {
 
         using vec<4, T>::vec;
 
-        quat() : vec<4, T>(0, 0, 0, 1) {}
+        quat() : vec<4, T>(T(0), T(0), T(0), T(1)) {}
 
         explicit quat(const vec<4, T>& v) : vec<4, T>(v) {}
         operator vec<4, T>() const { return this->xyzw(); }
