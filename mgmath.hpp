@@ -1692,7 +1692,7 @@ namespace mgm {
                 T(1) / (aspect * tan_half_fov), T(0),                 T(0),                                T(0),
                 T(0),                           T(1) / tan_half_fov,  T(0),                                T(0),
                 T(0),                           T(0),                 -(far + near) / (far - near),        -(T(2) * far * near) / (far - near),
-                T(0),                           T(0),                 T(-1), T(0)
+                T(0),                           T(0),                 T(-1),                               T(0)
             };
         }
     };
