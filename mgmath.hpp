@@ -838,7 +838,7 @@ namespace mgm {
         friend std::ostream& operator<<(std::ostream& os, const vec<S, T>& v) {
             os << "(";
             for (size_t i = 0; i < S; i++) {
-                os << v._data[i];
+                os << v.data()[i];
                 if (i != S - 1)
                     os << ", ";
             }
@@ -847,7 +847,7 @@ namespace mgm {
         }
         friend std::istream& operator>>(std::istream& is, vec<S, T>& v) {
             for (size_t i = 0; i < S; i++)
-                is >> v._data[i];
+                is >> v.data()[i];
             return is;
         }
 
