@@ -12,8 +12,8 @@
 #include <xmmintrin.h>
 #endif
 
-#define ASSURE_SIZE(SIZE) size_t VectorSize = S, typename std::enable_if<VectorSize >= SIZE, bool>::type = true
-#define ASSURE_EXACT_SIZE(SIZE) size_t VectorSize = S, typename std::enable_if < VectorSize == SIZE, bool > ::type = true
+#define ASSURE_SIZE(SIZE) luint VectorSize = S, typename std::enable_if<VectorSize >= SIZE, bool>::type = true
+#define ASSURE_EXACT_SIZE(SIZE) luint VectorSize = S, typename std::enable_if < VectorSize == SIZE, bool > ::type = true
 
 
 namespace mgm {
@@ -25,8 +25,20 @@ namespace mgm {
     // VECTORS
     //=========
 
+    using uint8 = uint8_t;
+    using int8 = int8_t;
+    using uint16 = uint16_t;
+    using int16 = int16_t;
+    using uint32 = uint32_t;
+    using int32 = int32_t;
+    using uint64 = uint64_t;
+    using int64 = int64_t;
 
-    template<size_t S, typename T>
+    using uint = uint32;
+    using luint = size_t;
+
+
+    template<luint S, typename T>
     class vec_storage {
       public:
         T _data[S];
@@ -49,14 +61,14 @@ namespace mgm {
         template<ASSURE_SIZE(4)>
         const T& _w() const { return _data[3]; }
 
-        T& operator[](const size_t i) {
+        T& operator[](const luint i) {
 #if !defined(NDEBUG)
             if (i > S)
                 throw std::runtime_error{"Index out of range"};
 #endif
             return _data[i];
         }
-        const T& operator[](const size_t i) const {
+        const T& operator[](const luint i) const {
 #if !defined(NDEBUG)
             if (i > S)
                 throw std::runtime_error{"Index out of range"};
@@ -95,7 +107,7 @@ namespace mgm {
         const T& _z() const { return z; }
         const T& _w() const { return w; }
 
-        T& operator[](const size_t i) {
+        T& operator[](const luint i) {
             switch (i) {
                 case 0: return x;
                 case 1: return y;
@@ -109,7 +121,7 @@ namespace mgm {
 #endif
             }
         }
-        const T& operator[](const size_t i) const {
+        const T& operator[](const luint i) const {
             switch (i) {
                 case 0: return x;
                 case 1: return y;
@@ -157,7 +169,7 @@ namespace mgm {
         const T& _y() const { return y; }
         const T& _z() const { return z; }
 
-        T& operator[](const size_t i) {
+        T& operator[](const luint i) {
             switch (i) {
                 case 0: return x;
                 case 1: return y;
@@ -170,7 +182,7 @@ namespace mgm {
 #endif
             }
         }
-        const T& operator[](const size_t i) const {
+        const T& operator[](const luint i) const {
             switch (i) {
                 case 0: return x;
                 case 1: return y;
@@ -213,7 +225,7 @@ namespace mgm {
         const T& _x() const { return x; }
         const T& _y() const { return y; }
 
-        T& operator[](const size_t i) {
+        T& operator[](const luint i) {
             switch (i) {
                 case 0: return x;
                 case 1: return y;
@@ -225,7 +237,7 @@ namespace mgm {
 #endif
             }
         }
-        const T& operator[](const size_t i) const {
+        const T& operator[](const luint i) const {
             switch (i) {
                 case 0: return x;
                 case 1: return y;
@@ -255,7 +267,7 @@ namespace mgm {
         const T* data() const { return (const T*)this; }
     };
 
-    template<size_t S, class T>
+    template<luint S, class T>
     class vec : public vec_storage<S, T> {
       public:
         template<ASSURE_SIZE(1)>
@@ -291,7 +303,7 @@ namespace mgm {
             using Type = TypeList<Ts..., U>;
         };
 
-        template<size_t n, typename U = TypeList<>>
+        template<luint n, typename U = TypeList<>>
         struct IntListGenerator {
             using Type = typename IntListGenerator<n - 1, typename Append<T, U>::Type>::Type;
         };
@@ -301,30 +313,30 @@ namespace mgm {
             using Type = U;
         };
 
-        template<size_t n>
+        template<luint n>
         using IntList = typename IntListGenerator<n>::Type;
 
-        static inline void add_one(const T& a, const T& b, T& r, size_t& i) {
+        static inline void add_one(const T& a, const T& b, T& r, luint& i) {
             r = a + b;
             ++i;
         }
-        static inline void sub_one(const T& a, const T& b, T& r, size_t& i) {
+        static inline void sub_one(const T& a, const T& b, T& r, luint& i) {
             r = a - b;
             ++i;
         }
-        static inline void mul_one(const T& a, const T& b, T& r, size_t& i) {
+        static inline void mul_one(const T& a, const T& b, T& r, luint& i) {
             r = a * b;
             ++i;
         }
-        static inline void div_one(const T& a, const T& b, T& r, size_t& i) {
+        static inline void div_one(const T& a, const T& b, T& r, luint& i) {
             r = a / b;
             ++i;
         }
-        static inline void mod_one(const T& a, const T& b, T& r, size_t& i) {
+        static inline void mod_one(const T& a, const T& b, T& r, luint& i) {
             r = a % b;
             ++i;
         }
-        static inline void eq_one(const T& a, const T& b, bool& r, size_t& i) {
+        static inline void eq_one(const T& a, const T& b, bool& r, luint& i) {
             r = r && a == b;
             ++i;
         }
@@ -332,66 +344,66 @@ namespace mgm {
 
         template<typename... Ts>
         static inline void add(const T* a, const T* b, T* r, TypeList<Ts...>) {
-            size_t i = 0;
+            luint i = 0;
             (add_one((const Ts&)a[i], (const Ts&)b[i], (Ts&)r[i], i), ...);
         }
         template<typename... Ts>
         static inline void sub(const T* a, const T* b, T* r, TypeList<Ts...>) {
-            size_t i = 0;
+            luint i = 0;
             (sub_one((const Ts&)a[i], (const Ts&)b[i], (Ts&)r[i], i), ...);
         }
         template<typename... Ts>
         static inline void mul(const T* a, const T* b, T* r, TypeList<Ts...>) {
-            size_t i = 0;
+            luint i = 0;
             (mul_one((const Ts&)a[i], (const Ts&)b[i], (Ts&)r[i], i), ...);
         }
         template<typename... Ts>
         static inline void div(const T* a, const T* b, T* r, TypeList<Ts...>) {
-            size_t i = 0;
+            luint i = 0;
             (div_one((const Ts&)a[i], (const Ts&)b[i], (Ts&)r[i], i), ...);
         }
         template<typename... Ts>
         static inline void mod(const T* a, const T* b, T* r, TypeList<Ts...>) {
-            size_t i = 0;
+            luint i = 0;
             (mod_one((const Ts&)a[i], (const Ts&)b[i], (Ts&)r[i], i), ...);
         }
         template<typename... Ts>
         static inline bool eq(const T* a, const T* b, TypeList<Ts...>) {
-            size_t i = 0;
+            luint i = 0;
             bool result = true;
             (eq_one((const Ts&)a[i], (const Ts&)b[i], result, i), ...);
             return result;
         }
 
-        static inline void real_dot(const T& a, const T& b, T& r, size_t& i) {
+        static inline void real_dot(const T& a, const T& b, T& r, luint& i) {
             r += a * b;
             ++i;
         }
         template<typename... Ts>
         static inline T real_dot(const T* a, const T* b, TypeList<Ts...>) {
-            size_t i = 0;
+            luint i = 0;
             T sum = 0;
             ((real_dot((const Ts&)a[i], (const Ts&)b[i], (Ts&)sum, i)), ...);
             return sum;
         }
 
-        static inline void max_one(const T& a, const T& b, T& r, size_t& i) {
+        static inline void max_one(const T& a, const T& b, T& r, luint& i) {
             r = a > b ? a : b;
             ++i;
         }
-        static inline void min_one(const T& a, const T& b, T& r, size_t& i) {
+        static inline void min_one(const T& a, const T& b, T& r, luint& i) {
             r = a < b ? a : b;
             ++i;
         }
 
         template<typename... Ts>
         static inline void max(const T* a, const T* b, T* r, TypeList<Ts...>) {
-            size_t i = 0;
+            luint i = 0;
             (max_one((const Ts&)a[i], (const Ts&)b[i], (Ts&)r[i], i), ...);
         }
         template<typename... Ts>
         static inline void min(const T* a, const T* b, T* r, TypeList<Ts...>) {
-            size_t i = 0;
+            luint i = 0;
             (min_one((const Ts&)a[i], (const Ts&)b[i], (Ts&)r[i], i), ...);
         }
 
@@ -1123,7 +1135,7 @@ namespace mgm {
         template<class... Ts, ASSURE_SIZE(5)>
         vec(const Ts... xs) {
             static_assert(sizeof...(Ts) + 1 == S, "Incorrect number of arguments to vec constructor");
-            size_t i = 0;
+            luint i = 0;
             ((data()[i++] = xs), ...);
         }
 
@@ -1153,8 +1165,8 @@ namespace mgm {
             memcpy(data(), k, S * sizeof(T));
         }
 
-        T& operator[](const size_t i) { return vec_storage<S, T>::operator[](i); }
-        const T& operator[](const size_t i) const { return vec_storage<S, T>::operator[](i); }
+        T& operator[](const luint i) { return vec_storage<S, T>::operator[](i); }
+        const T& operator[](const luint i) const { return vec_storage<S, T>::operator[](i); }
 
         vec<S, T> operator+(const vec<S, T>& v) const {
             vec<S, T> res;
@@ -1233,7 +1245,7 @@ namespace mgm {
 
         friend std::ostream& operator<<(std::ostream& os, const vec<S, T>& v) {
             os << "(";
-            for (size_t i = 0; i < S; i++) {
+            for (luint i = 0; i < S; i++) {
                 os << v.data()[i];
                 if (i != S - 1)
                     os << ", ";
@@ -1242,7 +1254,7 @@ namespace mgm {
             return os;
         }
         friend std::istream& operator>>(std::istream& is, vec<S, T>& v) {
-            for (size_t i = 0; i < S; i++)
+            for (luint i = 0; i < S; i++)
                 is >> v.data()[i];
             return is;
         }
@@ -1652,47 +1664,47 @@ namespace mgm {
     using vec3d = vec<3, double>;
     using vec4d = vec<4, double>;
 
-    using vec2u8 = vec<2, uint8_t>;
-    using vec3u8 = vec<3, uint8_t>;
-    using vec4u8 = vec<4, uint8_t>;
-    using vec2i8 = vec<2, int8_t>;
-    using vec3i8 = vec<3, int8_t>;
-    using vec4i8 = vec<4, int8_t>;
+    using vec2u8 = vec<2, uint8>;
+    using vec3u8 = vec<3, uint8>;
+    using vec4u8 = vec<4, uint8>;
+    using vec2i8 = vec<2, int8>;
+    using vec3i8 = vec<3, int8>;
+    using vec4i8 = vec<4, int8>;
 
-    using vec2u16 = vec<2, uint16_t>;
-    using vec3u16 = vec<3, uint16_t>;
-    using vec4u16 = vec<4, uint16_t>;
-    using vec2i16 = vec<2, int16_t>;
-    using vec3i16 = vec<3, int16_t>;
-    using vec4i16 = vec<4, int16_t>;
+    using vec2u16 = vec<2, uint16>;
+    using vec3u16 = vec<3, uint16>;
+    using vec4u16 = vec<4, uint16>;
+    using vec2i16 = vec<2, int16>;
+    using vec3i16 = vec<3, int16>;
+    using vec4i16 = vec<4, int16>;
 
-    using vec2u32 = vec<2, uint32_t>;
-    using vec3u32 = vec<3, uint32_t>;
-    using vec4u32 = vec<4, uint32_t>;
-    using vec2i32 = vec<2, int32_t>;
-    using vec3i32 = vec<3, int32_t>;
-    using vec4i32 = vec<4, int32_t>;
+    using vec2u32 = vec<2, uint32>;
+    using vec3u32 = vec<3, uint32>;
+    using vec4u32 = vec<4, uint32>;
+    using vec2i32 = vec<2, int32>;
+    using vec3i32 = vec<3, int32>;
+    using vec4i32 = vec<4, int32>;
 
-    using vec2u64 = vec<2, uint64_t>;
-    using vec3u64 = vec<3, uint64_t>;
-    using vec4u64 = vec<4, uint64_t>;
-    using vec2i64 = vec<2, int64_t>;
-    using vec3i64 = vec<3, int64_t>;
-    using vec4i64 = vec<4, int64_t>;
+    using vec2u64 = vec<2, uint64>;
+    using vec3u64 = vec<3, uint64>;
+    using vec4u64 = vec<4, uint64>;
+    using vec2i64 = vec<2, int64>;
+    using vec3i64 = vec<3, int64>;
+    using vec4i64 = vec<4, int64>;
 
 
     //==========
     // MATRICES
     //==========
 
-    template<size_t l, size_t c, class T>
+    template<luint l, luint c, class T>
     class mat {
         template<class... Ts>
-        void init(size_t& i, const T x, const Ts... xs) {
+        void init(luint& i, const T x, const Ts... xs) {
             ((T*)data)[i] = x;
             init(++i, xs...);
         }
-        void init(size_t& i, const T x) {
+        void init(luint& i, const T x) {
             ((T*)data)[i] = x;
         }
 
@@ -1706,16 +1718,16 @@ namespace mgm {
 
         template<class... Ts>
         mat(const T x, const Ts... xs) {
-            size_t i = 0;
+            luint i = 0;
             init(i, x, xs...);
         }
 
         explicit mat(const T x = T()) {
             if constexpr (l == c)
-                for (size_t i = 0; i < l; i++)
+                for (luint i = 0; i < l; i++)
                     data[i][i] = x;
             else
-                for (size_t i = 0; i < l && i < c; i++)
+                for (luint i = 0; i < l && i < c; i++)
                     data[i][i] = x;
         }
 
@@ -1723,12 +1735,12 @@ namespace mgm {
             memcpy(data, k, l * c * sizeof(T));
         }
 
-        vec<c, T>& operator[](const size_t i) {
+        vec<c, T>& operator[](const luint i) {
             if (i < l)
                 return data[i];
             return data[l - 1];
         }
-        const vec<c, T>& operator[](const size_t i) const {
+        const vec<c, T>& operator[](const luint i) const {
             if (i < l)
                 return data[i];
             return data[l - 1];
@@ -1736,34 +1748,34 @@ namespace mgm {
 
         mat<l, c, T> operator+(const mat<l, c, T>& m) const {
             mat<l, c, T> res{};
-            for (size_t i = 0; i < l; i++)
+            for (luint i = 0; i < l; i++)
                 res[i] = data[i] + m[i];
             return res;
         }
         mat<l, c, T> operator-(const mat<l, c, T>& m) const {
             mat<l, c, T> res{};
-            for (size_t i = 0; i < l; i++)
+            for (luint i = 0; i < l; i++)
                 res[i] = data[i] - m[i];
             return res;
         }
 
-        template<size_t l2, size_t c2, typename std::enable_if<c == l2, int>::type = 0>
+        template<luint l2, luint c2, typename std::enable_if<c == l2, int>::type = 0>
         mat<l, c2, T> operator*(const mat<l2, c2, T>& m) const {
             mat<l, c2, T> res{};
-            for (size_t i = 0; i < l; i++)
-                for (size_t j = 0; j < c2; j++)
-                    for (size_t k = 0; k < c; k++)
+            for (luint i = 0; i < l; i++)
+                for (luint j = 0; j < c2; j++)
+                    for (luint k = 0; k < c; k++)
                         res[i][j] += data[i][k] * m[k][j];
             return res;
         }
 
         mat<l, c, T>& operator+=(const mat<l, c, T>& m) {
-            for (size_t i = 0; i < l; i++)
+            for (luint i = 0; i < l; i++)
                 data[i] += m[i];
             return *this;
         }
         mat<l, c, T>& operator-=(const mat<l, c, T>& m) {
-            for (size_t i = 0; i < l; i++)
+            for (luint i = 0; i < l; i++)
                 data[i] -= m[i];
             return *this;
         }
@@ -1779,8 +1791,8 @@ namespace mgm {
          */
         mat<c, l, T> transposed() const {
             mat<c, l, T> res{};
-            for (size_t i = 0; i < c; i++)
-                for (size_t j = 0; j < l; j++)
+            for (luint i = 0; i < c; i++)
+                for (luint j = 0; j < l; j++)
                     res[i][j] = data[j][i];
             return res;
         }
@@ -1793,8 +1805,8 @@ namespace mgm {
          */
         mat<l - 1, c - 1, T> submat(const vec2u64& pos) const {
             mat<l - 1, c - 1, T> res{};
-            for (size_t i = 0; i < l - 1; i++) {
-                for (size_t j = 0; j < c - 1; j++) {
+            for (luint i = 0; i < l - 1; i++) {
+                for (luint j = 0; j < c - 1; j++) {
                     res[i][j] = data[i + (i >= pos.y)][j + (j >= pos.x)];
                 }
             }
@@ -1804,11 +1816,11 @@ namespace mgm {
         /**
          * @brief Calculate the determinant of the matrix
          */
-        template<size_t Lines = l, size_t Columns = c, typename std::enable_if<Lines >= 3 && Columns == Lines, int>::type = 0>
+        template<luint Lines = l, luint Columns = c, typename std::enable_if<Lines >= 3 && Columns == Lines, int>::type = 0>
         T det() const {
             T res{};
             bool ff = false;
-            for (size_t i = 0; i < c; i++) {
+            for (luint i = 0; i < c; i++) {
                 if (ff)
                     res -= data[i][0] * submat(vec2u64(i, 0)).det();
                 else
@@ -1821,7 +1833,7 @@ namespace mgm {
         /**
          * @brief Calculate the determinant of the matrix
          */
-        template<size_t Lines = l, size_t Columns = c, typename std::enable_if<Lines == 2 && Columns == 2, int>::type = 0>
+        template<luint Lines = l, luint Columns = c, typename std::enable_if<Lines == 2 && Columns == 2, int>::type = 0>
         T det() const {
             return data[0][0] * data[1][1] - data[0][1] * data[1][0];
         }
@@ -1831,7 +1843,7 @@ namespace mgm {
          *
          * @param angle The angle to use
          */
-        template<size_t Lines = l, size_t Columns = c, class Type = T, typename std::enable_if<Lines == 2 && Columns == 2 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
+        template<luint Lines = l, luint Columns = c, class Type = T, typename std::enable_if<Lines == 2 && Columns == 2 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_rotation2d(T angle) {
             const T cos = std::cos(angle);
             const T sin = std::sin(angle);
@@ -1846,7 +1858,7 @@ namespace mgm {
          *
          * @param angle The angle to use
          */
-        template<size_t Lines = l, size_t Columns = c, class Type = T, typename std::enable_if<Lines == 3 && Columns == 3 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
+        template<luint Lines = l, luint Columns = c, class Type = T, typename std::enable_if<Lines == 3 && Columns == 3 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_rotation2d(T angle) {
             const T cos = std::cos(angle);
             const T sin = std::sin(angle);
@@ -1862,7 +1874,7 @@ namespace mgm {
          *
          * @param angle The angle to use
          */
-        template<size_t Lines = l, size_t Columns = c, class Type = T, typename std::enable_if<Lines == 3 && Columns == 3 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
+        template<luint Lines = l, luint Columns = c, class Type = T, typename std::enable_if<Lines == 3 && Columns == 3 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_x_rotation3d(T angle) {
             const T cos = std::cos(angle);
             const T sin = std::sin(angle);
@@ -1878,7 +1890,7 @@ namespace mgm {
          *
          * @param angle The angle to use
          */
-        template<size_t Lines = l, size_t Columns = c, class Type = T, typename std::enable_if<Lines == 3 && Columns == 3 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
+        template<luint Lines = l, luint Columns = c, class Type = T, typename std::enable_if<Lines == 3 && Columns == 3 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_y_rotation3d(T angle) {
             const T cos = std::cos(angle);
             const T sin = std::sin(angle);
@@ -1894,7 +1906,7 @@ namespace mgm {
          *
          * @param angle The angle to use
          */
-        template<size_t Lines = l, size_t Columns = c, class Type = T, typename std::enable_if<Lines == 3 && Columns == 3 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
+        template<luint Lines = l, luint Columns = c, class Type = T, typename std::enable_if<Lines == 3 && Columns == 3 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_z_rotation3d(T angle) {
             const T cos = std::cos(angle);
             const T sin = std::sin(angle);
@@ -1911,7 +1923,7 @@ namespace mgm {
          * @param sin Sine of the angle
          * @param cos Cosine of the angle
          */
-        template<size_t Lines = l, size_t Columns = c, class Type = T, typename std::enable_if<Lines == 3 && Columns == 3 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
+        template<luint Lines = l, luint Columns = c, class Type = T, typename std::enable_if<Lines == 3 && Columns == 3 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_x_rotation3d(T sin, T cos) {
             return mat<c, l, T>{
                 (T)1, T(), T(),
@@ -1926,7 +1938,7 @@ namespace mgm {
          * @param sin Sine of the angle
          * @param cos Cosine of the angle
          */
-        template<size_t Lines = l, size_t Columns = c, class Type = T, typename std::enable_if<Lines == 3 && Columns == 3 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
+        template<luint Lines = l, luint Columns = c, class Type = T, typename std::enable_if<Lines == 3 && Columns == 3 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_y_rotation3d(T sin, T cos) {
             return mat<c, l, T>{
                 cos, T(), sin,
@@ -1941,7 +1953,7 @@ namespace mgm {
          * @param sin Sine of the angle
          * @param cos Cosine of the angle
          */
-        template<size_t Lines = l, size_t Columns = c, class Type = T, typename std::enable_if<Lines == 3 && Columns == 3 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
+        template<luint Lines = l, luint Columns = c, class Type = T, typename std::enable_if<Lines == 3 && Columns == 3 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_z_rotation3d(T sin, T cos) {
             return mat<c, l, T>{
                 cos, -sin, T(),
@@ -1955,7 +1967,7 @@ namespace mgm {
          *
          * @param angle The angle to use
          */
-        template<size_t Lines = l, size_t Columns = c, class Type = T, typename std::enable_if<Lines == 4 && Columns == 4 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
+        template<luint Lines = l, luint Columns = c, class Type = T, typename std::enable_if<Lines == 4 && Columns == 4 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_x_rotation3d(T angle) {
             const T cos = std::cos(angle);
             const T sin = std::sin(angle);
@@ -1972,7 +1984,7 @@ namespace mgm {
          *
          * @param angle The angle to use
          */
-        template<size_t Lines = l, size_t Columns = c, class Type = T, typename std::enable_if<Lines == 4 && Columns == 4 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
+        template<luint Lines = l, luint Columns = c, class Type = T, typename std::enable_if<Lines == 4 && Columns == 4 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_y_rotation3d(T angle) {
             const T cos = std::cos(angle);
             const T sin = std::sin(angle);
@@ -1989,7 +2001,7 @@ namespace mgm {
          *
          * @param angle The angle to use
          */
-        template<size_t Lines = l, size_t Columns = c, class Type = T, typename std::enable_if<Lines == 4 && Columns == 4 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
+        template<luint Lines = l, luint Columns = c, class Type = T, typename std::enable_if<Lines == 4 && Columns == 4 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_z_rotation3d(T angle) {
             const T cos = std::cos(angle);
             const T sin = std::sin(angle);
@@ -2007,7 +2019,7 @@ namespace mgm {
          * @param sin Sine of the angle
          * @param cos Cosine of the angle
          */
-        template<size_t Lines = l, size_t Columns = c, class Type = T, typename std::enable_if<Lines == 4 && Columns == 4 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
+        template<luint Lines = l, luint Columns = c, class Type = T, typename std::enable_if<Lines == 4 && Columns == 4 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_x_rotation3d(T sin, T cos) {
             return mat<c, l, T>{
                 (T)1, T(), T(), T(),
@@ -2023,7 +2035,7 @@ namespace mgm {
          * @param sin Sine of the angle
          * @param cos Cosine of the angle
          */
-        template<size_t Lines = l, size_t Columns = c, class Type = T, typename std::enable_if<Lines == 4 && Columns == 4 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
+        template<luint Lines = l, luint Columns = c, class Type = T, typename std::enable_if<Lines == 4 && Columns == 4 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_y_rotation3d(T sin, T cos) {
             return mat<c, l, T>{
                 cos, T(), sin, T(),
@@ -2039,7 +2051,7 @@ namespace mgm {
          * @param sin Sine of the angle
          * @param cos Cosine of the angle
          */
-        template<size_t Lines = l, size_t Columns = c, class Type = T, typename std::enable_if<Lines == 4 && Columns == 4 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
+        template<luint Lines = l, luint Columns = c, class Type = T, typename std::enable_if<Lines == 4 && Columns == 4 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_z_rotation3d(T sin, T cos) {
             return mat<c, l, T>{
                 cos, -sin, T(), T(),
@@ -2049,7 +2061,7 @@ namespace mgm {
             };
         }
 
-        template<size_t Lines = l, size_t Columns = c, class Type = T, typename std::enable_if<Lines == 4 && Columns == 4 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
+        template<luint Lines = l, luint Columns = c, class Type = T, typename std::enable_if<Lines == 4 && Columns == 4 && (std::is_same<Type, float>::value || std::is_same<Type, double>::value), int>::type = 0>
         static mat<l, c, T> gen_perspective_projection(T fov, T aspect, T near, T far) {
             T tan_half_fov = std::tan(fov / T(2));
             return mat<4, 4, T>{
@@ -2068,33 +2080,33 @@ namespace mgm {
     using mat3d = mat<3, 3, double>;
     using mat4d = mat<4, 4, double>;
 
-    using mat2u8 = mat<2, 2, uint8_t>;
-    using mat3u8 = mat<3, 3, uint8_t>;
-    using mat4u8 = mat<4, 4, uint8_t>;
-    using mat2i8 = mat<2, 2, int8_t>;
-    using mat3i8 = mat<3, 3, int8_t>;
-    using mat4i8 = mat<4, 4, int8_t>;
+    using mat2u8 = mat<2, 2, uint8>;
+    using mat3u8 = mat<3, 3, uint8>;
+    using mat4u8 = mat<4, 4, uint8>;
+    using mat2i8 = mat<2, 2, int8>;
+    using mat3i8 = mat<3, 3, int8>;
+    using mat4i8 = mat<4, 4, int8>;
 
-    using mat2u16 = mat<2, 2, uint16_t>;
-    using mat3u16 = mat<3, 3, uint16_t>;
-    using mat4u16 = mat<4, 4, uint16_t>;
-    using mat2i16 = mat<2, 2, int16_t>;
-    using mat3i16 = mat<3, 3, int16_t>;
-    using mat4i16 = mat<4, 4, int16_t>;
+    using mat2u16 = mat<2, 2, uint16>;
+    using mat3u16 = mat<3, 3, uint16>;
+    using mat4u16 = mat<4, 4, uint16>;
+    using mat2i16 = mat<2, 2, int16>;
+    using mat3i16 = mat<3, 3, int16>;
+    using mat4i16 = mat<4, 4, int16>;
 
-    using mat2u32 = mat<2, 2, uint32_t>;
-    using mat3u32 = mat<3, 3, uint32_t>;
-    using mat4u32 = mat<4, 4, uint32_t>;
-    using mat2i32 = mat<2, 2, int32_t>;
-    using mat3i32 = mat<3, 3, int32_t>;
-    using mat4i32 = mat<4, 4, int32_t>;
+    using mat2u32 = mat<2, 2, uint32>;
+    using mat3u32 = mat<3, 3, uint32>;
+    using mat4u32 = mat<4, 4, uint32>;
+    using mat2i32 = mat<2, 2, int32>;
+    using mat3i32 = mat<3, 3, int32>;
+    using mat4i32 = mat<4, 4, int32>;
 
-    using mat2u64 = mat<2, 2, uint64_t>;
-    using mat3u64 = mat<3, 3, uint64_t>;
-    using mat4u64 = mat<4, 4, uint64_t>;
-    using mat2i64 = mat<2, 2, int64_t>;
-    using mat3i64 = mat<3, 3, int64_t>;
-    using mat4i64 = mat<4, 4, int64_t>;
+    using mat2u64 = mat<2, 2, uint64>;
+    using mat3u64 = mat<3, 3, uint64>;
+    using mat4u64 = mat<4, 4, uint64>;
+    using mat2i64 = mat<2, 2, int64>;
+    using mat3i64 = mat<3, 3, int64>;
+    using mat4i64 = mat<4, 4, int64>;
 
 
     //=============
