@@ -52,20 +52,36 @@ namespace mgm {
     constexpr inline T min(const T& _a, const T& _b) {
         return (_a > _b ? _b : _a);
     }
+    template<typename T, typename _T0, std::enable_if_t<std::is_convertible_v<_T0, T>, bool> = true>
+    constexpr inline T min(const T& _a, const _T0& _b) {
+        return min(_a, static_cast<T>(_b));
+    }
 
     template<typename T>
     constexpr inline T max(const T& _a, const T& _b) {
         return (_a > _b ? _a : _b);
+    }
+    template<typename T, typename _T0, std::enable_if_t<std::is_convertible_v<_T0, T>, bool> = true>
+    constexpr inline T max(const T& _a, const _T0& _b) {
+        return max(_a, static_cast<T>(_b));
     }
 
     template<typename T>
     constexpr inline T clamp(const T& _min, const T& _max, const T& _val) {
         return min(max(_min, _val), _max);
     }
+    template<typename T, typename _T0, typename _T1, std::enable_if_t<std::is_convertible_v<_T0, T> && std::is_convertible_v<_T1, T>, bool> = true>
+    constexpr inline T clamp(const T& _min, const _T0& _max, const _T1& _val) {
+        return clamp(_min, static_cast<T>(_max), static_cast<T>(_val));
+    }
 
     template<typename T>
     constexpr inline T lerp(const T& _a, const T& _b, const T& _factor) {
         return _a + (_b - _a) * _factor;
+    }
+    template<typename T, typename _T0, typename _T1, std::enable_if_t<std::is_convertible_v<_T0, T> && std::is_convertible_v<_T1, T>, bool> = true>
+    constexpr inline T lerp(const T& _a, const _T0& _b, const _T1& _factor) {
+        return lerp(_a, static_cast<T>(_b), static_cast<T>(_factor));
     }
 
 
