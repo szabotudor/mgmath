@@ -48,6 +48,27 @@ namespace mgm {
     using uptr = uintptr_t;
 
 
+    template<typename T>
+    constexpr inline T min(const T& _a, const T& _b) {
+        return (_a > _b ? _b : _a);
+    }
+
+    template<typename T>
+    constexpr inline T max(const T& _a, const T& _b) {
+        return (_a > _b ? _a : _b);
+    }
+
+    template<typename T>
+    constexpr inline T clamp(const T& _min, const T& _max, const T& _val) {
+        return min(max(_min, _val), _max);
+    }
+
+    template<typename T>
+    constexpr inline T lerp(const T& _a, const T& _b, const T& _factor) {
+        return _a + (_b - _a) * _factor;
+    }
+
+
     template<luint S, typename T>
     class vec_storage {
       public:
