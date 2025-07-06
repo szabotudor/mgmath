@@ -35,7 +35,17 @@ namespace mgm {
     using int64 = int64_t;
 
     using uint = uint32;
-    using luint = size_t;
+    using luint = uint64;
+
+#if INTPTR_MAX == INT64_MAX
+    using isize = int32;
+    using usize = uint32;
+#elif INTPTR_MAX == INT32_MAX
+    using isize = int64;
+    using usize = uint64;
+#endif
+    using iptr = intptr_t;
+    using uptr = uintptr_t;
 
 
     template<luint S, typename T>
@@ -267,7 +277,7 @@ namespace mgm {
         const T* data() const { return (const T*)this; }
     };
 
-    template<luint S, class T>
+    template<luint S, typename T>
     class vec : public vec_storage<S, T> {
       public:
         template<ASSURE_SIZE(1)>
@@ -1697,7 +1707,7 @@ namespace mgm {
     // MATRICES
     //==========
 
-    template<luint l, luint c, class T>
+    template<luint l, luint c, typename T>
     class mat {
         template<class... Ts>
         void init(luint& i, const T x, const Ts... xs) {
