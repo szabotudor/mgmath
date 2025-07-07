@@ -38,11 +38,11 @@ namespace mgm {
     using luint = uint64;
 
 #if INTPTR_MAX == INT64_MAX
-    using isize = int32;
-    using usize = uint32;
-#elif INTPTR_MAX == INT32_MAX
     using isize = int64;
     using usize = uint64;
+#elif INTPTR_MAX == INT32_MAX
+    using isize = int32;
+    using usize = uint32;
 #endif
     using iptr = intptr_t;
     using uptr = uintptr_t;
